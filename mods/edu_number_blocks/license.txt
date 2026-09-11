@@ -1,0 +1,3 @@
+Copyright (C) 2025 Educational Game contributors
+
+See the repository LICENSE.txt for licensing information.
