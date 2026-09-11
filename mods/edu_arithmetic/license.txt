@@ -1,0 +1,4 @@
+Copyright (C) 2025 Educational Game contributors
+
+This prototype follows the license of Minetest Game's Lua code. See the
+repository LICENSE.txt for details.
