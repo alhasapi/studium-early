@@ -74,6 +74,25 @@ local function flash_message(player, text, color)
 	end)
 end
 
+local function visual_feedback(player, correct)
+	local name = player:get_player_name()
+	local icon = correct and "edu_number_blocks_correct.png" or "edu_number_blocks_incorrect.png"
+	local hud_id = player:hud_add({
+		type = "image", position = {x = 0.5, y = 0.35}, text = icon,
+		scale = {x = 2, y = 2},
+	})
+	minetest.after(2, function()
+		if player and player:is_player() then player:hud_remove(hud_id) end
+	end)
+	minetest.add_particlespawner({
+		amount = correct and 28 or 12, time = 0.5,
+		minpos = vector.subtract(player:get_pos(), {x = 0.7, y = 0, z = 0.7}),
+		maxpos = vector.add(player:get_pos(), {x = 0.7, y = 1.8, z = 0.7}),
+		minvel = {x = -1, y = 1, z = -1}, maxvel = {x = 1, y = 3, z = 1},
+		texture = icon,
+	})
+end
+
 local function check_answer(player)
 	local name = player:get_player_name()
 	local puzzle = puzzles[name]
@@ -98,6 +117,7 @@ local function check_answer(player)
 	end
 	if correct_block then
 		minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.3})
+		visual_feedback(player, true)
 		flash_message(player, "★  CORRECT!  ★", 0x66ff66)
 		minetest.chat_send_player(name, "★ CORRECT! A new equation is ready.")
 		local next_puzzle = new_puzzle()
@@ -107,6 +127,7 @@ local function check_answer(player)
 		minetest.chat_send_player(name, S("Wonderful! A new equation is ready."))
 	else
 		minetest.sound_play("edu_number_blocks_incorrect", {to_player = name, gain = 0.9})
+		visual_feedback(player, false)
 		flash_message(player, "✦  TRY AGAIN!  ✦", 0xffcc66)
 		minetest.chat_send_player(name, S("Not yet. Try a different number block."))
 	end
@@ -196,6 +217,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		if value then answer = tonumber(value) end
 		if answer == puzzle.answer then
 			minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.0})
+			visual_feedback(player, true)
 			local next_puzzle = new_puzzle()
 			next_puzzle.pos = puzzle.pos
 			puzzles[name] = next_puzzle
@@ -203,6 +225,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			show_board(player, S("Wonderful! Build the next answer."))
 		else
 			minetest.sound_play("edu_number_blocks_incorrect", {to_player = name, gain = 0.8})
+			visual_feedback(player, false)
 			show_board(player, S("Not yet. Try a different number block."))
 		end
 		return true
