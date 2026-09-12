@@ -1,5 +1,9 @@
 local logic = {}
-logic.words = {"CAT", "DOG", "SUN", "FISH", "TREE"}
+logic.words = {
+	"CAT", "APPLE", "BALL", "DOG", "EGG", "FISH", "GOAT", "HOUSE", "ICE",
+	"JAR", "KITE", "LION", "MOON", "NEST", "OWL", "PIG", "QUEEN", "RABBIT",
+	"SUN", "TREE", "UMBRELLA", "VAN", "WOLF", "XYLOPHONE", "YOYO", "ZEBRA",
+}
 
 function logic.is_correct(word, letters)
 	if #letters ~= #word then return false end

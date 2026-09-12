@@ -1,13 +1,10 @@
 local S = minetest.get_translator("edu_english_blocks")
 local logic = dofile(minetest.get_modpath("edu_english_blocks") .. "/logic.lua")
 local puzzles = {}
-local pictures = {
-	CAT = "cat",
-	DOG = "dog",
-	SUN = "sun",
-	FISH = "fish",
-	TREE = "tree",
-}
+local pictures = {}
+for _, word in ipairs(logic.words) do
+	pictures[word] = word:lower()
+end
 local directions = {
 	{x = 1, y = 0, z = 0}, {x = -1, y = 0, z = 0},
 	{x = 0, y = 0, z = 1}, {x = 0, y = 0, z = -1},
@@ -140,7 +137,8 @@ for code = string.byte("A"), string.byte("Z") do
 	})
 end
 
-for _, picture in ipairs({"cat", "dog", "sun", "fish", "tree"}) do
+for _, word in ipairs(logic.words) do
+	local picture = word:lower()
 	minetest.register_node("edu_english_blocks:picture_" .. picture, {
 		description = S("Picture"),
 		tiles = {"edu_english_blocks_picture_" .. picture .. ".png"},
