@@ -35,8 +35,9 @@ local function arrange_hotbar(player, command)
 	}
 	local inv = player:get_inventory()
 	for slot, item in ipairs(items[command] or {}) do
-		local stack = inv:get_stack("main", slot)
-		if stack:is_empty() then inv:set_stack("main", slot, item) end
+		-- The hotbar is the child-facing activity palette. Replace it so
+		-- stale blocks from another activity cannot hide the new selection.
+		inv:set_stack("main", slot, item)
 	end
 end
 
