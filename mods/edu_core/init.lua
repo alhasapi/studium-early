@@ -71,6 +71,19 @@ minetest.register_chatcommand("edu_menu", {
 	end,
 })
 
+minetest.register_on_joinplayer(function(player)
+	local meta = player:get_meta()
+	if meta:get_string("edu_toolbox_given") ~= "1" then
+		local inventory = player:get_inventory()
+		if inventory:get_stack("main", 1):is_empty() then
+			inventory:set_stack("main", 1, "edu_core:toolbox")
+		else
+			inventory:add_item("main", "edu_core:toolbox")
+		end
+		meta:set_string("edu_toolbox_given", "1")
+	end
+end)
+
 minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if formname ~= "edu_core:toolbox" then return false end
 	local name = player:get_player_name()
