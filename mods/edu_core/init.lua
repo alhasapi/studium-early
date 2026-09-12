@@ -60,11 +60,19 @@ minetest.register_chatcommand("edu_menu", {
 minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if formname ~= "edu_core:toolbox" then return false end
 	local name = player:get_player_name()
-	local command = fields.arithmetic and "edu_blocks"
-		or fields.english and "edu_english"
-		or fields.logic and "edu_logic"
+	local command
+	if fields.arithmetic ~= nil then
+		command = "edu_blocks"
+	elseif fields.english ~= nil then
+		command = "edu_english"
+	elseif fields.logic ~= nil then
+		command = "edu_logic"
+	end
 	if command and minetest.registered_chatcommands[command] then
-		minetest.registered_chatcommands[command].func(name)
+		local success, message = minetest.registered_chatcommands[command].func(name)
+		minetest.close_formspec(name, formname)
+		if message then minetest.chat_send_player(name, message) end
+		minetest.log("action", "Studium toolbox selected " .. command .. " for " .. name .. " (" .. tostring(success) .. ")")
 	end
 	return true
 end)
