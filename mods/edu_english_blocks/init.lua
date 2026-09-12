@@ -62,8 +62,8 @@ end
 
 minetest.register_node("edu_english_blocks:board", {
 	description = S("English Word Board"),
-	inventory_image = "default_wood.png",
-	tiles = {"default_wood.png"},
+	inventory_image = "edu_english_blocks_board.png",
+	tiles = {"edu_english_blocks_board.png"},
 	groups = {choppy = 2, oddly_breakable_by_hand = 2},
 	on_construct = function(pos)
 		local word = choose_word()

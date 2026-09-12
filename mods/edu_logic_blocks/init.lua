@@ -47,7 +47,7 @@ end
 
 minetest.register_node("edu_logic_blocks:board", {
 	description = S("Pattern Board"),
-	inventory_image = "default_wood.png", tiles = {"default_wood.png"},
+	inventory_image = "edu_logic_blocks_board.png", tiles = {"edu_logic_blocks_board.png"},
 	groups = {choppy = 2, oddly_breakable_by_hand = 2},
 	on_construct = function(pos)
 		build_pattern(pos, choose_pattern())
