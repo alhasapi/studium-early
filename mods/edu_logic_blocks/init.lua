@@ -79,7 +79,8 @@ minetest.register_node("edu_logic_blocks:question", {
 	description = S("Missing pattern block"),
 	inventory_image = "edu_logic_blocks_question.png",
 	tiles = {"edu_logic_blocks_question.png"},
-	groups = {not_in_creative_inventory = 1},
+	groups = {choppy = 2, oddly_breakable_by_hand = 2, not_in_creative_inventory = 1},
+	drop = "",
 })
 
 minetest.register_chatcommand("edu_logic", {
