@@ -178,7 +178,7 @@ minetest.register_chatcommand("edu_english_blocks", command)
 -- Once all letter slots are filled, placing the final block checks the word
 -- automatically. The board remains usable for starting a puzzle and retrying.
 auto_check_word = function(pos, node, placer)
-	if not placer or not placer:is_player() or not letter_from_node(node.name) then return end
+	if not placer or not placer.get_player_name or not letter_from_node(node.name) then return end
 	local puzzle = puzzles[placer:get_player_name()]
 	if not puzzle or not puzzle.pos then return end
 	local board_pos = puzzle.pos
