@@ -161,6 +161,10 @@ for number = 0, 20 do
 		inventory_image = "edu_number_blocks_number_" .. number .. ".png",
 		tiles = {"edu_number_blocks_number_" .. number .. ".png"},
 		groups = {choppy = 2, oddly_breakable_by_hand = 2},
+		after_place_node = function(_pos, placer)
+			local puzzle = placer and puzzles[placer:get_player_name()]
+			if puzzle and puzzle.pos then check_answer(placer) end
+		end,
 		on_construct = function(pos)
 			minetest.get_meta(pos):set_string("infotext", S("Number @1", number))
 		end,

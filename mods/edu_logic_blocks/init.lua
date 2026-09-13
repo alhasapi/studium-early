@@ -72,7 +72,7 @@ minetest.register_node("edu_logic_blocks:board", {
 		else
 			feedback(player, false)
 		end
-		puzzles[name] = true
+		puzzles[name] = {pos = vector.copy(pos)}
 	end,
 })
 
@@ -82,6 +82,17 @@ for _, color in ipairs(colors) do
 		inventory_image = "edu_logic_blocks_" .. color .. ".png",
 		tiles = {"edu_logic_blocks_" .. color .. ".png"},
 		groups = {choppy = 2, oddly_breakable_by_hand = 2},
+		after_place_node = function(pos, placer)
+			if not placer then return end
+			local puzzle = puzzles[placer:get_player_name()]
+			if puzzle and puzzle.pos and math.abs(pos.x - (puzzle.pos.x + 4)) <= 1 and
+				math.abs(pos.y - (puzzle.pos.y + 1)) <= 1 and math.abs(pos.z - puzzle.pos.z) <= 1 then
+				local board = minetest.get_node(puzzle.pos)
+				if board.name == "edu_logic_blocks:board" then
+					minetest.registered_nodes[board.name].on_rightclick(puzzle.pos, board, placer)
+				end
+			end
+		end,
 	})
 end
 

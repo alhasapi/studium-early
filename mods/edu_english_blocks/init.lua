@@ -123,6 +123,7 @@ minetest.register_node("edu_english_blocks:board", {
 	end,
 })
 
+local auto_check_word
 for code = string.byte("A"), string.byte("Z") do
 	local letter = string.char(code)
 	minetest.register_node("edu_english_blocks:letter_" .. letter, {
@@ -131,6 +132,9 @@ for code = string.byte("A"), string.byte("Z") do
 		inventory_image = "edu_english_blocks_letter_" .. letter .. ".png",
 		tiles = {"edu_english_blocks_letter_" .. letter .. ".png"},
 		groups = {choppy = 2, oddly_breakable_by_hand = 2},
+		after_place_node = function(pos, node, placer)
+			if auto_check_word then auto_check_word(pos, node, placer) end
+		end,
 		on_construct = function(pos)
 			minetest.get_meta(pos):set_string("infotext", S("Letter @1", letter))
 		end,
@@ -164,3 +168,40 @@ local command = {
 }
 minetest.register_chatcommand("edu_english", command)
 minetest.register_chatcommand("edu_english_blocks", command)
+
+-- Once all letter slots are filled, placing the final block checks the word
+-- automatically. The board remains usable for starting a puzzle and retrying.
+auto_check_word = function(pos, node, placer)
+	if not placer or not placer:is_player() or not letter_from_node(node.name) then return end
+	local puzzle = puzzles[placer:get_player_name()]
+	if not puzzle or not puzzle.pos then return end
+	local board_pos = puzzle.pos
+	if math.abs(pos.x - board_pos.x) > 8 or math.abs(pos.y - board_pos.y) > 2 or math.abs(pos.z - board_pos.z) > 8 then return end
+	for _, direction in ipairs(directions) do
+		local complete = true
+		for index = 1, #puzzle.word do
+			local found = false
+			for a = -1, 1 do
+				for b = -1, 1 do
+					local p
+					if direction.x ~= 0 then
+						p = {x = board_pos.x + direction.x * index, y = board_pos.y + 1 + a, z = board_pos.z + b}
+					elseif direction.z ~= 0 then
+						p = {x = board_pos.x + a, y = board_pos.y + 1 + b, z = board_pos.z + direction.z * index}
+					else
+						p = {x = board_pos.x + a, y = board_pos.y + direction.y * index, z = board_pos.z + b}
+					end
+					if letter_from_node(minetest.get_node(p).name) then found = true end
+				end
+			end
+			if not found then complete = false break end
+		end
+		if complete then
+			local board = minetest.get_node(board_pos)
+			if board.name == "edu_english_blocks:board" then
+				minetest.registered_nodes[board.name].on_rightclick(board_pos, board, placer)
+			end
+			return
+		end
+	end
+end
