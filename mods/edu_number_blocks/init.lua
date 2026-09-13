@@ -211,10 +211,17 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			show_board(player, S("Open a board first."))
 			return true
 		end
-		local answer = nil
-		local node = minetest.get_node({x = pos.x + 5, y = pos.y, z = pos.z}).name
-		local value = node:match("^edu_number_blocks:number_(%d+)$")
-		if value then answer = tonumber(value) end
+		local answer
+		-- Use the same forgiving placement scan as the physical board check.
+		for _, x in ipairs({-2, -1, 0, 5, 6, 7, 8}) do
+			for y = -1, 1 do
+				for z = -1, 1 do
+					local node = minetest.get_node({x = pos.x + x, y = pos.y + y, z = pos.z + z}).name
+					local value = logic.number_from_node(node)
+					if value ~= nil then answer = value end
+				end
+			end
+		end
 		if answer == puzzle.answer then
 			minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.0})
 			visual_feedback(player, true)

@@ -54,7 +54,17 @@ minetest.register_node("edu_logic_blocks:board", {
 	end,
 	on_rightclick = function(pos, _node, player)
 		local name = player:get_player_name()
-		local answer = color_from_node(minetest.get_node({x = pos.x + 4, y = pos.y + 1, z = pos.z}).name)
+		local answer
+		-- Accept blocks placed at the target slot even when the child misses
+		-- the center by one node or places it at board height.
+		for x = -1, 1 do
+			for y = -1, 1 do
+				for z = -1, 1 do
+					local candidate = color_from_node(minetest.get_node({x = pos.x + 4 + x, y = pos.y + 1 + y, z = pos.z + z}).name)
+					if candidate then answer = candidate end
+				end
+			end
+		end
 		local target = minetest.get_meta(pos):get_string("answer")
 		if logic.is_correct({answer = target}, answer) then
 			feedback(player, true)
