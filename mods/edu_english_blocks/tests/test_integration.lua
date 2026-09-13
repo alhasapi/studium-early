@@ -18,6 +18,7 @@ _G.minetest = {
 	get_translator = function() return function(text) return text end end,
 	get_modpath = function() return root end,
 	register_node = function(name, definition) definitions[name] = definition end,
+	registered_nodes = definitions,
 	register_chatcommand = function() end,
 	get_node = function(p) return {name = nodes[key(p)] or "air"} end,
 	set_node = function(p, node) nodes[key(p)] = node.name end,
@@ -31,20 +32,22 @@ math.random = function() return 1 end
 
 dofile(root .. "/init.lua")
 local board = definitions["edu_english_blocks:board"]
-assert(board and board.on_rightclick, "board callback registered")
+assert(board and board.on_rightclick and board.after_place_node, "board callbacks registered")
+assert(definitions["edu_english_blocks:letter_T"].after_place_node, "automatic word callback registered")
 local pos = {x = 0, y = 0, z = 0}
 local player = {
 	get_player_name = function() return "tester" end,
 	get_pos = function() return {x = 0, y = 0, z = 0} end,
-	is_player = function() return true end,
 	hud_add = function() return 1 end,
 	hud_remove = function() end,
 }
--- First interaction initializes the puzzle without destroying pre-existing blocks.
-board.on_rightclick(pos, {}, player)
+-- Board placement initializes the puzzle without requiring a right-click.
+board.on_construct(pos)
+nodes[key(pos)] = "edu_english_blocks:board"
+board.after_place_node(pos, player)
 for index, letter in ipairs({"C", "A", "T"}) do
 	nodes[key({x = pos.x + index, y = pos.y + 1, z = pos.z})] = "edu_english_blocks:letter_" .. letter
 end
-board.on_rightclick(pos, {}, player)
-assert(sounds[#sounds] == "edu_english_blocks_correct", "correct word feedback")
+definitions["edu_english_blocks:letter_T"].after_place_node({x = pos.x + 3, y = pos.y + 1, z = pos.z}, player)
+assert(sounds[#sounds] == "edu_english_blocks_correct", "automatic correct word feedback")
 print("edu_english_blocks integration tests passed")

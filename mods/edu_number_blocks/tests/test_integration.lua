@@ -32,7 +32,8 @@ math.random = function() return table.remove(random_values, 1) or 1 end
 
 dofile(root .. "/init.lua")
 local board = definitions["edu_number_blocks:board"]
-assert(board and board.on_rightclick, "arithmetic board callback registered")
+assert(board and board.on_rightclick and board.after_place_node, "arithmetic board callbacks registered")
+assert(definitions["edu_number_blocks:number_5"].after_place_node, "automatic answer callback registered")
 local pos = {x = 0, y = 0, z = 0}
 local player = {
 	get_player_name = function() return "tester" end,
@@ -41,12 +42,13 @@ local player = {
 	hud_add = function() return 1 end,
 	hud_remove = function() end,
 }
-board.on_rightclick(pos, {}, player)
+board.after_place_node(pos, player)
 assert(nodes["1,0,0"] == "edu_number_blocks:number_2", "left operand created")
 assert(nodes["5,0,0"] == "air", "answer slot is empty")
 nodes["5,0,0"] = "edu_number_blocks:number_5"
-board.on_rightclick(pos, {}, player)
-assert(sounds[#sounds] == "edu_number_blocks_correct", "correct arithmetic feedback")
+local previous_sound = sounds[#sounds]
+definitions["edu_number_blocks:number_5"].after_place_node({x = 5, y = 0, z = 0}, player)
+assert(sounds[#sounds] == "edu_number_blocks_correct" and sounds[#sounds] ~= previous_sound, "automatic correct arithmetic feedback")
 nodes["5,0,0"] = "edu_number_blocks:number_0"
 board.on_rightclick(pos, {}, player)
 assert(sounds[#sounds] == "edu_number_blocks_incorrect", "incorrect arithmetic feedback")

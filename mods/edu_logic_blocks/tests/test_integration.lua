@@ -14,6 +14,7 @@ _G.minetest = {
 	get_translator = function() return function(text) return text end end,
 	get_modpath = function() return root end,
 	register_node = function(name, definition) definitions[name] = definition end,
+	registered_nodes = definitions,
 	register_chatcommand = function() end,
 	get_node = function(p) return {name = nodes[key(p)] or "air"} end,
 	set_node = function(p, node) nodes[key(p)] = node.name end,
@@ -26,21 +27,23 @@ math.random = function() return 1 end
 
 dofile(root .. "/init.lua")
 local board = definitions["edu_logic_blocks:board"]
-assert(board and board.on_construct and board.on_rightclick, "board callbacks registered")
+assert(board and board.on_construct and board.on_rightclick and board.after_place_node, "board callbacks registered")
+assert(definitions["edu_logic_blocks:blue"].after_place_node, "automatic answer callback registered")
 local pos = {x = 0, y = 0, z = 0}
 board.on_construct(pos)
+nodes[key(pos)] = "edu_logic_blocks:board"
 assert(nodes["1,1,0"] == "edu_logic_blocks:red", "first pattern block created")
 assert(nodes["2,1,0"] == "edu_logic_blocks:blue", "second pattern block created")
 assert(nodes["4,1,0"] == "edu_logic_blocks:question", "missing block created")
 local player = {
 	get_player_name = function() return "tester" end,
-	is_player = function() return true end,
 	hud_add = function() return 1 end,
 	hud_remove = function() end,
 }
+board.after_place_node(pos, player)
 nodes["4,1,0"] = "edu_logic_blocks:blue"
-board.on_rightclick(pos, {}, player)
-assert(sounds[#sounds] == "edu_logic_blocks_correct", "correct answer feedback")
+definitions["edu_logic_blocks:blue"].after_place_node({x = 4, y = 1, z = 0}, player)
+assert(sounds[#sounds] == "edu_logic_blocks_correct", "automatic correct answer feedback")
 nodes["4,1,0"] = "edu_logic_blocks:red"
 board.on_rightclick(pos, {}, player)
 assert(sounds[#sounds] == "edu_logic_blocks_incorrect", "incorrect answer feedback")

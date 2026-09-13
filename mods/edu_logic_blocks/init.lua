@@ -41,7 +41,7 @@ local function feedback(player, correct)
 		scale = {x = 2, y = 2},
 	})
 	minetest.after(2, function()
-		if player:is_player() then player:hud_remove(hud) end
+		if player and player.get_player_name then player:hud_remove(hud) end
 	end)
 end
 
