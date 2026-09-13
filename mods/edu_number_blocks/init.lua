@@ -138,6 +138,14 @@ minetest.register_node("edu_number_blocks:board", {
 	inventory_image = "edu_number_blocks_board.png",
 	tiles = {"edu_number_blocks_board.png"},
 	groups = {choppy = 2, oddly_breakable_by_hand = 2},
+	after_place_node = function(pos, placer)
+		if placer then
+			local puzzle = new_puzzle()
+			puzzle.pos = vector.copy(pos)
+			puzzles[placer:get_player_name()] = puzzle
+			build_equation(pos, puzzle)
+		end
+	end,
 	on_rightclick = function(pos, _node, clicker)
 		local name = clicker:get_player_name()
 		local puzzle = puzzles[name]

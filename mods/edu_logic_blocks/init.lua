@@ -49,6 +49,9 @@ minetest.register_node("edu_logic_blocks:board", {
 	description = S("Pattern Board"),
 	inventory_image = "edu_logic_blocks_board.png", tiles = {"edu_logic_blocks_board.png"},
 	groups = {choppy = 2, oddly_breakable_by_hand = 2},
+	after_place_node = function(pos, placer)
+		if placer then puzzles[placer:get_player_name()] = {pos = vector.copy(pos)} end
+	end,
 	on_construct = function(pos)
 		build_pattern(pos, choose_pattern())
 	end,

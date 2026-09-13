@@ -65,6 +65,12 @@ minetest.register_node("edu_english_blocks:board", {
 	inventory_image = "edu_english_blocks_board.png",
 	tiles = {"edu_english_blocks_board.png"},
 	groups = {choppy = 2, oddly_breakable_by_hand = 2},
+	after_place_node = function(pos, placer)
+		if placer then
+			local word = minetest.get_meta(pos):get_string("word")
+			puzzles[placer:get_player_name()] = {word = word, pos = vector.copy(pos)}
+		end
+	end,
 	on_construct = function(pos)
 		local word = choose_word()
 		minetest.get_meta(pos):set_string("word", word)
