@@ -120,15 +120,24 @@ minetest.register_chatcommand("edu_menu", {
 
 minetest.register_on_joinplayer(function(player)
 	local meta = player:get_meta()
-	if meta:get_string("edu_toolbox_given") ~= "1" then
-		local inventory = player:get_inventory()
-		if inventory:get_stack("main", 1):is_empty() then
-			inventory:set_stack("main", 1, "edu_core:toolbox")
+	local inventory = player:get_inventory()
+	local toolbox = "edu_core:toolbox"
+	local held = inventory:get_stack("main", 1)
+
+	-- The toolbox is always the first thing a child holds after joining.
+	-- Preserve whatever was previously in slot 1 by moving it into the inventory.
+	if held:get_name() ~= toolbox then
+		local old_item = held:to_string()
+		if inventory:contains_item("main", toolbox) then
+			inventory:remove_item("main", toolbox)
 		else
-			inventory:add_item("main", "edu_core:toolbox")
+			inventory:add_item("main", toolbox)
 		end
-		meta:set_string("edu_toolbox_given", "1")
+		if old_item ~= "" then inventory:add_item("main", old_item) end
+		inventory:set_stack("main", 1, toolbox)
 	end
+	player:set_wield_index(1)
+	meta:set_string("edu_toolbox_given", "1")
 end)
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
