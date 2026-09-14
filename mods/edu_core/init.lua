@@ -136,7 +136,9 @@ minetest.register_on_joinplayer(function(player)
 		if old_item ~= "" then inventory:add_item("main", old_item) end
 		inventory:set_stack("main", 1, toolbox)
 	end
-	player:set_wield_index(1)
+	-- Some Luanti versions select slot 1 by default but do not expose a
+	-- set_wield_index method. Use it when available without breaking older APIs.
+	if player.set_wield_index then player:set_wield_index(1) end
 	meta:set_string("edu_toolbox_given", "1")
 end)
 
