@@ -185,6 +185,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		-- is already available in the inventory; use Current task blocks when
 		-- the child needs to browse more blocks.
 		update_palette_inventory(name, command, 1)
+		minetest.close_formspec(name, "edu_core:toolbox")
 	end
 	return true
 end)
