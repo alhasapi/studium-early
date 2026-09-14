@@ -37,8 +37,9 @@ local function build_word(pos, word)
 	minetest.get_meta(pos):set_string("infotext", S("Look at the picture and build the word"))
 end
 
-local function feedback(player, _text, sound, correct)
+local function feedback(player, text, sound, correct)
 	local name = player:get_player_name()
+	minetest.chat_send_player(name, text)
 	minetest.sound_play(sound, {to_player = name, gain = 1.0})
 	local feedback_hud = player:hud_add({
 		type = "image",
@@ -93,8 +94,8 @@ minetest.register_node("edu_english_blocks:board", {
 			for index = 1, #puzzle.word do
 				-- Accept small placement offsets around each slot. This is deliberately
 				-- forgiving for children placing blocks by hand.
-				for a = -1, 1 do
-					for b = -1, 1 do
+				for a = -4, 4 do
+					for b = -4, 4 do
 						local p
 						if direction.x ~= 0 then
 							p = {x = pos.x + direction.x * index, y = pos.y + 1 + a, z = pos.z + b}
@@ -138,8 +139,8 @@ for code = string.byte("A"), string.byte("Z") do
 		inventory_image = "edu_english_blocks_letter_" .. letter .. ".png",
 		tiles = {"edu_english_blocks_letter_" .. letter .. ".png"},
 		groups = {choppy = 2, oddly_breakable_by_hand = 2},
-		after_place_node = function(pos, node, placer)
-			if auto_check_word then auto_check_word(pos, node, placer) end
+		after_place_node = function(pos, placer)
+			if auto_check_word then auto_check_word(pos, placer) end
 		end,
 		on_construct = function(pos)
 			minetest.get_meta(pos):set_string("infotext", S("Letter @1", letter))
@@ -177,18 +178,50 @@ minetest.register_chatcommand("edu_english_blocks", command)
 
 -- Once all letter slots are filled, placing the final block checks the word
 -- automatically. The board remains usable for starting a puzzle and retrying.
-auto_check_word = function(pos, node, placer)
-	if not placer or not placer.get_player_name or not letter_from_node(node.name) then return end
+local function word_matches_nearby(board_pos, word)
+	for ox = -4, 4 do
+		for oy = -2, 2 do
+			for oz = -4, 4 do
+				for _, direction in ipairs(directions) do
+					local matches = true
+					for index = 1, #word do
+						local p = {
+							x = board_pos.x + ox + direction.x * (index - 1),
+							y = board_pos.y + oy + direction.y * (index - 1),
+							z = board_pos.z + oz + direction.z * (index - 1),
+						}
+						if letter_from_node(minetest.get_node(p).name) ~= word:sub(index, index) then
+							matches = false
+							break
+						end
+					end
+					if matches then return true end
+				end
+			end
+		end
+	end
+	return false
+end
+
+auto_check_word = function(pos, placer)
+	if not placer or not placer.get_player_name or not letter_from_node(minetest.get_node(pos).name) then return end
 	local puzzle = puzzles[placer:get_player_name()]
 	if not puzzle or not puzzle.pos then return end
 	local board_pos = puzzle.pos
 	if math.abs(pos.x - board_pos.x) > 8 or math.abs(pos.y - board_pos.y) > 2 or math.abs(pos.z - board_pos.z) > 8 then return end
+	if word_matches_nearby(board_pos, puzzle.word) then
+		local board = minetest.get_node(board_pos)
+		if board.name == "edu_english_blocks:board" then
+			minetest.registered_nodes[board.name].on_rightclick(board_pos, board, placer)
+		end
+		return
+	end
 	for _, direction in ipairs(directions) do
 		local complete = true
 		for index = 1, #puzzle.word do
 			local found = false
-			for a = -1, 1 do
-				for b = -1, 1 do
+			for a = -4, 4 do
+				for b = -4, 4 do
 					local p
 					if direction.x ~= 0 then
 						p = {x = board_pos.x + direction.x * index, y = board_pos.y + 1 + a, z = board_pos.z + b}

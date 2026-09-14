@@ -21,6 +21,7 @@ _G.minetest = {
 	registered_nodes = definitions,
 	register_chatcommand = function() end,
 	get_node = function(p) return {name = nodes[key(p)] or "air"} end,
+	chat_send_player = function() end,
 	set_node = function(p, node) nodes[key(p)] = node.name end,
 	remove_node = function(p) nodes[key(p)] = "air" end,
 	get_meta = meta,
