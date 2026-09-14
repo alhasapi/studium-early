@@ -182,7 +182,10 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		arrange_hotbar(player, command)
 		if message then minetest.chat_send_player(name, message) end
 		minetest.log("action", "Studium toolbox selected " .. command .. " for " .. name .. " (" .. tostring(success) .. ")")
-		open_palette(name, command, 1)
+		-- Do not interrupt board placement with a block picker. The first page
+		-- is already available in the inventory; use Current task blocks when
+		-- the child needs to browse more blocks.
+		update_palette_inventory(name, command, 1)
 	end
 	return true
 end)
