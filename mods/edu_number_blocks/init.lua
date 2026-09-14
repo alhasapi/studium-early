@@ -93,6 +93,29 @@ local function visual_feedback(player, correct)
 	})
 end
 
+local function answer_matches(pos, puzzle)
+	for _, x in ipairs({-2, -1, 0, 5, 6, 7, 8}) do
+		for y = -1, 1 do
+			for z = -1, 1 do
+				local digits = {}
+				for length = 0, 1 do
+					local node = minetest.get_node({x = pos.x + x + length, y = pos.y + y, z = pos.z + z}).name
+					local value = logic.number_from_node(node)
+					if value == nil then break end
+					if value >= 10 then
+						if length == 0 and logic.is_correct(puzzle, value) then return true end
+						break
+					end
+					digits[#digits + 1] = value
+					local answer = logic.answer_from_digits(digits)
+					if logic.is_correct(puzzle, answer) then return true end
+				end
+			end
+		end
+	end
+	return false
+end
+
 local function check_answer(player)
 	local name = player:get_player_name()
 	local puzzle = puzzles[name]
@@ -101,21 +124,8 @@ local function check_answer(player)
 		return
 	end
 
-	-- Accept a number block beside the answer space, regardless of which
-	-- side the child is looking from. Do not inspect the four equation slots.
-	local correct_block = false
-	for _, x in ipairs({-2, -1, 0, 5, 6, 7, 8}) do
-		for y = -1, 1 do
-			for z = -1, 1 do
-				local node = minetest.get_node({x = puzzle.pos.x + x, y = puzzle.pos.y + y, z = puzzle.pos.z + z}).name
-				local value = logic.number_from_node(node)
-				if logic.is_correct(puzzle, value) then
-					correct_block = true
-				end
-			end
-		end
-	end
-	if correct_block then
+	-- Accept a single number block or adjacent digit blocks beside the answer.
+	if answer_matches(puzzle.pos, puzzle) then
 		minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.3})
 		visual_feedback(player, true)
 		flash_message(player, "★  CORRECT!  ★", 0x66ff66)
@@ -223,18 +233,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			show_board(player, S("Open a board first."))
 			return true
 		end
-		local answer
-		-- Use the same forgiving placement scan as the physical board check.
-		for _, x in ipairs({-2, -1, 0, 5, 6, 7, 8}) do
-			for y = -1, 1 do
-				for z = -1, 1 do
-					local node = minetest.get_node({x = pos.x + x, y = pos.y + y, z = pos.z + z}).name
-					local value = logic.number_from_node(node)
-					if value ~= nil then answer = value end
-				end
-			end
-		end
-		if answer == puzzle.answer then
+		if answer_matches(pos, puzzle) then
 			minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.0})
 			visual_feedback(player, true)
 			local next_puzzle = new_puzzle()

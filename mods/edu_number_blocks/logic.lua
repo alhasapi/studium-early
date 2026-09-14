@@ -22,4 +22,12 @@ function logic.number_from_node(node_name)
 	return value and tonumber(value) or nil
 end
 
+function logic.answer_from_digits(digits)
+	if type(digits) ~= "table" or #digits == 0 or #digits > 2 then return nil end
+	for _, digit in ipairs(digits) do
+		if type(digit) ~= "number" or digit < 0 or digit > 9 or digit % 1 ~= 0 then return nil end
+	end
+	return tonumber(table.concat(digits))
+end
+
 return logic

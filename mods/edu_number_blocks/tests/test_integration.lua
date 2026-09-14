@@ -27,7 +27,7 @@ _G.minetest = {
 	after = function() end,
 	add_particlespawner = function() end,
 }
-local random_values = {1, 2, 3, 1, 1, 0}
+local random_values = {1, 2, 3, 2, 10, 10, 1, 1, 0}
 math.random = function() return table.remove(random_values, 1) or 1 end
 
 dofile(root .. "/init.lua")
@@ -49,6 +49,11 @@ nodes["5,0,0"] = "edu_number_blocks:number_5"
 local previous_sound = sounds[#sounds]
 definitions["edu_number_blocks:number_5"].after_place_node({x = 5, y = 0, z = 0}, player)
 assert(sounds[#sounds] == "edu_number_blocks_correct" and sounds[#sounds] ~= previous_sound, "automatic correct arithmetic feedback")
+nodes["5,0,0"] = "edu_number_blocks:number_1"
+definitions["edu_number_blocks:number_1"].after_place_node({x = 5, y = 0, z = 0}, player)
+nodes["6,0,0"] = "edu_number_blocks:number_0"
+definitions["edu_number_blocks:number_0"].after_place_node({x = 6, y = 0, z = 0}, player)
+assert(sounds[#sounds] == "edu_number_blocks_correct", "automatic two-digit arithmetic feedback")
 nodes["5,0,0"] = "edu_number_blocks:number_0"
 board.on_rightclick(pos, {}, player)
 assert(sounds[#sounds] == "edu_number_blocks_incorrect", "incorrect arithmetic feedback")

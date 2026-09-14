@@ -30,6 +30,9 @@ check(not logic.is_correct(addition, "17"), "text answer rejected")
 check(logic.number_from_node("edu_number_blocks:number_17") == 17, "two-digit node parsed")
 check(logic.number_from_node("edu_number_blocks:number_7") == 7, "single-digit node parsed")
 check(logic.number_from_node("default:wood") == nil, "non-number node rejected")
+check(logic.answer_from_digits({1, 7}) == 17, "adjacent digit blocks compose two-digit answer")
+check(logic.answer_from_digits({0, 7}) == 7, "leading zero remains usable")
+check(logic.answer_from_digits({17}) == nil, "multi-digit node is not treated as a digit")
 
 math.randomseed(90210)
 for _ = 1, 500 do
