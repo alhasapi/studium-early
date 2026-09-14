@@ -11,6 +11,7 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 WORLD="$TMP/world"
 LOG="$TMP/luanti.log"
+PORT=$((20000 + ($$ % 20000)))
 mkdir -p "$WORLD"
 cat > "$WORLD/world.mt" <<EOF
 world_name = studium-smoke
@@ -27,7 +28,7 @@ EOF
 
 # Use the installed Studium mods, matching a user's real installation.
 set +e
-timeout 5 luanti --server --world "$WORLD" --logfile "$LOG" --quiet
+timeout 5 luanti --server --port "$PORT" --world "$WORLD" --logfile "$LOG" --quiet
 status=$?
 set -e
 if [ "$status" -ne 0 ] && [ "$status" -ne 124 ]; then

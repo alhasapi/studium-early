@@ -50,12 +50,31 @@ local palette_items = {
 for number = 0, 20 do palette_items.edu_blocks[#palette_items.edu_blocks + 1] = "edu_number_blocks:number_" .. number end
 for code = string.byte("A"), string.byte("Z") do palette_items.edu_english[#palette_items.edu_english + 1] = "edu_english_blocks:letter_" .. string.char(code) end
 
+local function update_palette_inventory(name, command, page)
+	local player = minetest.get_player_by_name(name)
+	if not player then return end
+	local items = palette_items[command] or {}
+	local per_page = 9
+	local first = (page - 1) * per_page + 1
+	local inv = player:get_inventory()
+	-- Keep the activity board in slot 1 and mirror the current page into
+	-- the next nine hotbar slots, so More immediately changes what is usable.
+	inv:set_stack("main", 1, command == "edu_blocks" and "edu_number_blocks:board"
+		or command == "edu_english" and "edu_english_blocks:board"
+		or "edu_logic_blocks:board")
+	for slot = 2, 10 do
+		local item = items[first + slot - 2]
+		inv:set_stack("main", slot, item or "")
+	end
+end
+
 local function open_palette(name, command, page)
 	local items = palette_items[command] or {}
 	local per_page = 9
 	local first = (page - 1) * per_page + 1
 	local last = math.min(first + per_page - 1, #items)
 	palette_pages[name] = {command = command, page = page}
+	update_palette_inventory(name, command, page)
 	local form = {"formspec_version[4]", "size[9,5]", "label[3.2,0.3;Choose a block]"}
 	for index = first, last do
 		local slot = index - first
