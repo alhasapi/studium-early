@@ -42,6 +42,7 @@ local function arrange_hotbar(player, command)
 end
 
 local palette_pages = {}
+local active_commands = {}
 local palette_items = {
 	edu_blocks = {},
 	edu_english = {},
@@ -89,6 +90,8 @@ local function open_palette(name, command, page)
 end
 
 local function open_toolbox(name)
+	local current = active_commands[name]
+	local current_button = current and "button[1.5,3.55;5,0.65;current_task;Current task blocks]" or ""
 	minetest.show_formspec(name, "edu_core:toolbox", table.concat({
 		"formspec_version[4]", "size[8,5]",
 		"label[2.2,0.35;Studium]",
@@ -96,7 +99,8 @@ local function open_toolbox(name)
 		"item_image_button[3,1;2,2;edu_english_blocks:board;english;]",
 		"item_image_button[5.5,1;2,2;edu_logic_blocks:board;logic;]",
 		"label[0.65,3.2;Arithmetic]", "label[3.25,3.2;English]", "label[5.85,3.2;Logic]",
-		"button_exit[2.5,4;3,0.8;close;Done]",
+		current_button,
+		"button_exit[2.5,4.35;3,0.65;close;Done]",
 	}, ""))
 end
 
@@ -164,11 +168,16 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		return true
 	end
 	if formname ~= "edu_core:toolbox" then return false end
+	if fields.current_task ~= nil and active_commands[name] then
+		open_palette(name, active_commands[name], 1)
+		return true
+	end
 	local command
 	if fields.arithmetic ~= nil then command = "edu_blocks"
 	elseif fields.english ~= nil then command = "edu_english"
 	elseif fields.logic ~= nil then command = "edu_logic" end
 	if command and minetest.registered_chatcommands[command] then
+		active_commands[name] = command
 		local success, message = minetest.registered_chatcommands[command].func(name)
 		arrange_hotbar(player, command)
 		if message then minetest.chat_send_player(name, message) end
