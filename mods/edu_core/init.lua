@@ -100,7 +100,6 @@ local function open_toolbox(name)
 		"item_image_button[5.5,1;2,2;edu_logic_blocks:board;logic;]",
 		"label[0.65,3.2;Arithmetic]", "label[3.25,3.2;English]", "label[5.85,3.2;Logic]",
 		current_button,
-		"button_exit[2.5,4.35;3,0.65;close;Done]",
 	}, ""))
 end
 
