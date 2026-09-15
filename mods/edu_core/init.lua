@@ -85,7 +85,6 @@ local function open_palette(name, command, page)
 	end
 	if page > 1 then form[#form + 1] = "button[0.5,4.1;2,0.7;previous;Back]" end
 	if last < #items then form[#form + 1] = "button[6.5,4.1;2,0.7;next;More]" end
-	form[#form + 1] = "button_exit[3.2,4.1;2,0.7;done;Done]"
 	minetest.show_formspec(name, "edu_core:palette", table.concat(form, ""))
 end
 
@@ -160,6 +159,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 				if fields["pick_" .. index] ~= nil then
 					player:get_inventory():set_stack("main", 2, item)
 					minetest.chat_send_player(name, "Block ready in hotbar slot 2.")
+					minetest.close_formspec(name, "edu_core:palette")
 					break
 				end
 			end
