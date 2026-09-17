@@ -4,6 +4,12 @@
 
 edu = rawget(_G, "edu") or {}
 edu.storage = minetest.get_mod_storage()
+edu.content = dofile(minetest.get_modpath("edu_core") .. "/content.lua")
+
+local ok, errors = edu.content.register_pack(dofile(minetest.get_modpath("edu_core") .. "/content/early_en.lua"))
+if not ok then
+	error("Invalid Studium content pack: " .. table.concat(errors, "; "))
+end
 
 function edu.get_progress(player_name)
 	local raw = edu.storage:get_string("progress_" .. player_name)

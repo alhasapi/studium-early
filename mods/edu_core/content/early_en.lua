@@ -1,0 +1,78 @@
+-- Small reviewed starter pack. Exercises are original and intentionally simple.
+return {
+	id = "early_en_foundations",
+	version = 1,
+	locale = "en",
+	items = {
+		{
+			id = "math:add-within-5-2-plus-1", domain = "math", skill = "addition_within_5", band = 1,
+			type = "arithmetic_equation", prompt = {kind = "equation", visual = "number_blocks"},
+			left = 2, op = "+", right = 1, answer = 3,
+			accepted_nodes = {"edu_number_blocks:number_3"}, distractor_nodes = {"edu_number_blocks:number_2", "edu_number_blocks:number_4"},
+			provenance = {source = "original", topic = "addition within 5", status = "reviewed"},
+		},
+		{
+			id = "math:add-within-10-4-plus-5", domain = "math", skill = "addition_within_10", band = 2,
+			type = "arithmetic_equation", prompt = {kind = "equation", visual = "number_blocks"},
+			left = 4, op = "+", right = 5, answer = 9,
+			accepted_nodes = {"edu_number_blocks:number_9"}, distractor_nodes = {"edu_number_blocks:number_8", "edu_number_blocks:number_10"},
+			provenance = {source = "original", topic = "addition within 10", status = "reviewed"},
+		},
+		{
+			id = "math:subtract-within-10-7-minus-3", domain = "math", skill = "subtraction_within_10", band = 2,
+			type = "arithmetic_equation", prompt = {kind = "equation", visual = "number_blocks"},
+			left = 7, op = "-", right = 3, answer = 4,
+			accepted_nodes = {"edu_number_blocks:number_4"}, distractor_nodes = {"edu_number_blocks:number_3", "edu_number_blocks:number_5"},
+			provenance = {source = "original", topic = "subtraction within 10", status = "reviewed"},
+		},
+		{
+			id = "math:add-within-20-8-plus-7", domain = "math", skill = "addition_within_20", band = 3,
+			type = "arithmetic_equation", prompt = {kind = "equation", visual = "number_blocks"},
+			left = 8, op = "+", right = 7, answer = 15,
+			accepted_nodes = {"edu_number_blocks:number_15", "edu_number_blocks:number_1", "edu_number_blocks:number_5"},
+			provenance = {source = "original", topic = "addition within 20", status = "reviewed"},
+		},
+		{
+			id = "english:spell-cat", domain = "english", skill = "cvc_spelling", band = 1,
+			type = "word_spelling", prompt = {kind = "picture_to_word", cue = "cat"},
+			word = "CAT", answer = "CAT", picture = "cat",
+			accepted_nodes = {"edu_english_blocks:letter_C", "edu_english_blocks:letter_A", "edu_english_blocks:letter_T"},
+			provenance = {source = "original", topic = "CVC animal word", status = "reviewed"},
+		},
+		{
+			id = "english:spell-dog", domain = "english", skill = "cvc_spelling", band = 1,
+			type = "word_spelling", prompt = {kind = "picture_to_word", cue = "dog"},
+			word = "DOG", answer = "DOG", picture = "dog",
+			accepted_nodes = {"edu_english_blocks:letter_D", "edu_english_blocks:letter_O", "edu_english_blocks:letter_G"},
+			provenance = {source = "original", topic = "CVC animal word", status = "reviewed"},
+		},
+		{
+			id = "english:spell-sun", domain = "english", skill = "cvc_spelling", band = 1,
+			type = "word_spelling", prompt = {kind = "picture_to_word", cue = "sun"},
+			word = "SUN", answer = "SUN", picture = "sun",
+			accepted_nodes = {"edu_english_blocks:letter_S", "edu_english_blocks:letter_U", "edu_english_blocks:letter_N"},
+			provenance = {source = "original", topic = "CVC familiar object", status = "reviewed"},
+		},
+		{
+			id = "logic:pattern-ab-red-blue", domain = "logic", skill = "repeating_patterns", band = 1,
+			type = "visual_pattern", prompt = {kind = "missing_item", visual = "AB pattern"},
+			sequence = {"red", "blue", "red"}, answer = "blue",
+			accepted_nodes = {"edu_logic_blocks:blue"}, distractor_nodes = {"edu_logic_blocks:red", "edu_logic_blocks:yellow"},
+			provenance = {source = "original", topic = "AB pattern", status = "reviewed"},
+		},
+		{
+			id = "logic:pattern-aab-yellow-green", domain = "logic", skill = "repeating_patterns", band = 2,
+			type = "visual_pattern", prompt = {kind = "missing_item", visual = "AAB pattern"},
+			sequence = {"yellow", "yellow", "green"}, answer = "yellow",
+			accepted_nodes = {"edu_logic_blocks:yellow"}, distractor_nodes = {"edu_logic_blocks:green", "edu_logic_blocks:blue"},
+			provenance = {source = "original", topic = "AAB pattern", status = "reviewed"},
+		},
+		{
+			id = "logic:pattern-abc-red-blue-green", domain = "logic", skill = "repeating_patterns", band = 2,
+			type = "visual_pattern", prompt = {kind = "missing_item", visual = "ABC pattern"},
+			sequence = {"red", "blue", "green"}, answer = "red",
+			accepted_nodes = {"edu_logic_blocks:red"}, distractor_nodes = {"edu_logic_blocks:green", "edu_logic_blocks:yellow"},
+			provenance = {source = "original", topic = "ABC pattern", status = "reviewed"},
+		},
+	},
+}

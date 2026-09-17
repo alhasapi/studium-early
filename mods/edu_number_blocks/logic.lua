@@ -1,7 +1,27 @@
 -- Pure arithmetic logic. Kept independent from the Luanti API for testing.
 local logic = {}
 
-function logic.new_puzzle(random)
+local function puzzle_from_item(item)
+	return {
+		id = item.id,
+		left = item.left,
+		right = item.right,
+		op = item.op,
+		answer = item.answer,
+		skill = item.skill,
+		band = item.band,
+	}
+end
+
+function logic.new_puzzle(random, content_items, last_id)
+	if type(content_items) == "table" and #content_items > 0 then
+		local eligible = {}
+		for _, item in ipairs(content_items) do
+			if item.id ~= last_id then eligible[#eligible + 1] = item end
+		end
+		local items = #eligible > 0 and eligible or content_items
+		return puzzle_from_item(items[random(1, #items)])
+	end
 	local addition = random(1, 2) == 1
 	local left = random(0, 10)
 	local right = addition and random(0, 10) or random(0, left)

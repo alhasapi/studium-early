@@ -1,9 +1,13 @@
 local S = minetest.get_translator("edu_number_blocks")
 local puzzles = {}
 local logic = dofile(minetest.get_modpath("edu_number_blocks") .. "/logic.lua")
+local arithmetic_items = rawget(_G, "edu") and edu.content and edu.content.find({domain = "math", type = "arithmetic_equation"}) or {}
+local last_item_by_player = {}
 
-local function new_puzzle()
-	return logic.new_puzzle(math.random)
+local function new_puzzle(player_name)
+	local puzzle = logic.new_puzzle(math.random, arithmetic_items, last_item_by_player[player_name])
+	last_item_by_player[player_name] = puzzle.id
+	return puzzle
 end
 
 local function build_equation(pos, puzzle)
@@ -36,7 +40,7 @@ local function show_board(player, message)
 	local name = player:get_player_name()
 	local puzzle = puzzles[name]
 	if not puzzle then
-		puzzle = new_puzzle()
+		puzzle = new_puzzle(name)
 		puzzles[name] = puzzle
 	end
 	local text = string.format("%d %s %d = ?", puzzle.left, puzzle.op, puzzle.right)
@@ -130,7 +134,7 @@ local function check_answer(player)
 		visual_feedback(player, true)
 		flash_message(player, "★  CORRECT!  ★", 0x66ff66)
 		minetest.chat_send_player(name, "★ CORRECT! A new equation is ready.")
-		local next_puzzle = new_puzzle()
+		local next_puzzle = new_puzzle(name)
 		next_puzzle.pos = puzzle.pos
 		puzzles[name] = next_puzzle
 		build_equation(puzzle.pos, next_puzzle)
@@ -150,7 +154,7 @@ minetest.register_node("edu_number_blocks:board", {
 	groups = {choppy = 2, oddly_breakable_by_hand = 2},
 	after_place_node = function(pos, placer)
 		if placer then
-			local puzzle = new_puzzle()
+			local puzzle = new_puzzle(placer:get_player_name())
 			puzzle.pos = vector.copy(pos)
 			puzzles[placer:get_player_name()] = puzzle
 			build_equation(pos, puzzle)
@@ -160,7 +164,7 @@ minetest.register_node("edu_number_blocks:board", {
 		local name = clicker:get_player_name()
 		local puzzle = puzzles[name]
 		if not puzzle or not puzzle.pos or puzzle.pos.x ~= pos.x or puzzle.pos.y ~= pos.y or puzzle.pos.z ~= pos.z then
-			puzzle = new_puzzle()
+			puzzle = new_puzzle(name)
 			puzzle.pos = vector.copy(pos)
 			puzzles[name] = puzzle
 			build_equation(pos, puzzle)
@@ -236,7 +240,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		if answer_matches(pos, puzzle) then
 			minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.0})
 			visual_feedback(player, true)
-			local next_puzzle = new_puzzle()
+			local next_puzzle = new_puzzle(name)
 			next_puzzle.pos = puzzle.pos
 			puzzles[name] = next_puzzle
 			build_equation(puzzle.pos, next_puzzle)

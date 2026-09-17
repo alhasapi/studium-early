@@ -1,9 +1,15 @@
 local S = minetest.get_translator("edu_english_blocks")
 local logic = dofile(minetest.get_modpath("edu_english_blocks") .. "/logic.lua")
+local spelling_items = rawget(_G, "edu") and edu.content and edu.content.find({domain = "english", type = "word_spelling"}) or {}
 local puzzles = {}
 local pictures = {}
+if #spelling_items > 0 then logic.words = {} end
+for _, item in ipairs(spelling_items) do
+	logic.words[#logic.words + 1] = item.word
+	pictures[item.word] = item.picture
+end
 for _, word in ipairs(logic.words) do
-	pictures[word] = word:lower()
+	pictures[word] = pictures[word] or word:lower()
 end
 local directions = {
 	{x = 1, y = 0, z = 0}, {x = -1, y = 0, z = 0},
@@ -11,8 +17,14 @@ local directions = {
 	{x = 0, y = 1, z = 0}, {x = 0, y = -1, z = 0},
 }
 
+local last_word
 local function choose_word()
-	return logic.words[math.random(1, #logic.words)]
+	if #logic.words == 0 then return "CAT" end
+	if #logic.words == 1 then return logic.words[1] end
+	local word = logic.words[math.random(1, #logic.words)]
+	if word == last_word then word = logic.words[(math.random(1, #logic.words - 1) % #logic.words) + 1] end
+	last_word = word
+	return word
 end
 
 local function letter_from_node(name)
