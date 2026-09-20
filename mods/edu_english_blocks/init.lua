@@ -60,8 +60,14 @@ local last_word
 local function choose_word()
 	if #logic.words == 0 then return "CAT" end
 	if #logic.words == 1 then return logic.words[1] end
-	local word = logic.words[math.random(1, #logic.words)]
-	if word == last_word then word = logic.words[(math.random(1, #logic.words - 1) % #logic.words) + 1] end
+	-- Exclude the previous word from the draw. The old fallback used an index
+	-- expression that could never select the first word and, with two words,
+	-- always selected the second, so the same puzzle could repeat immediately.
+	local choices = {}
+	for _, word in ipairs(logic.words) do
+		if word ~= last_word then choices[#choices + 1] = word end
+	end
+	local word = choices[math.random(1, #choices)]
 	last_word = word
 	return word
 end
