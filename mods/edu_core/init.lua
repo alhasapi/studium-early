@@ -57,10 +57,19 @@ local palette_items = {
 for number = 0, 20 do palette_items.edu_blocks[#palette_items.edu_blocks + 1] = "edu_number_blocks:number_" .. number end
 for code = string.byte("A"), string.byte("Z") do palette_items.edu_english[#palette_items.edu_english + 1] = "edu_english_blocks:letter_" .. string.char(code) end
 
+-- Blocks for the task a player is working on right now, published by the activity
+-- module from the task's own accepted and distractor blocks. Falls back to the
+-- whole category palette when a task carries no block metadata.
+local task_blocks = {}
+
+local function palette_for(name, command)
+	return task_blocks[name] or palette_items[command] or {}
+end
+
 local function update_palette_inventory(name, command, page)
 	local player = minetest.get_player_by_name(name)
 	if not player then return end
-	local items = palette_items[command] or {}
+	local items = palette_for(name, command)
 	local per_page = 9
 	local first = (page - 1) * per_page + 1
 	local inv = player:get_inventory()
@@ -75,12 +84,30 @@ local function update_palette_inventory(name, command, page)
 	end
 end
 
+-- Activities call this when they start or rotate a task. Passing an empty list
+-- restores the full category palette. The hotbar is refreshed straight away so a
+-- child is never left holding the previous task's blocks.
+function edu.set_task_blocks(player_name, nodes)
+	if type(nodes) == "table" and #nodes > 0 then
+		task_blocks[player_name] = nodes
+	else
+		task_blocks[player_name] = nil
+	end
+	local command = active_commands[player_name]
+	if command then update_palette_inventory(player_name, command, 1) end
+end
+
+function edu.get_task_blocks(player_name)
+	return task_blocks[player_name]
+end
+
 local function open_palette(name, command, page)
-	local items = palette_items[command] or {}
+	local items = palette_for(name, command)
 	local per_page = 9
 	local first = (page - 1) * per_page + 1
 	local last = math.min(first + per_page - 1, #items)
-	palette_pages[name] = {command = command, page = page}
+	-- Remember the exact list shown so a pick maps back to the same entry.
+	palette_pages[name] = {command = command, page = page, items = items}
 	update_palette_inventory(name, command, page)
 	local form = {"formspec_version[4]", "size[9,5]", "label[3.2,0.3;Choose a block]"}
 	for index = first, last do
@@ -155,7 +182,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if formname == "edu_core:palette" then
 		local state = palette_pages[name]
 		if not state then return true end
-		local items = palette_items[state.command]
+		local items = state.items or palette_items[state.command] or {}
 		if fields.next then
 			open_palette(name, state.command, state.page + 1)
 		elseif fields.previous then

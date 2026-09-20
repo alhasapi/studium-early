@@ -1,7 +1,8 @@
 local S = minetest.get_translator("edu_number_blocks")
 local puzzles = {}
 local logic = dofile(minetest.get_modpath("edu_number_blocks") .. "/logic.lua")
-local content = rawget(_G, "edu") and edu.content or nil
+local edu_api = rawget(_G, "edu") or nil
+local content = edu_api and edu_api.content or nil
 local arithmetic_items = content and content.find({domain = "math", type = "arithmetic_equation"}) or {}
 local last_item_by_player = {}
 
@@ -16,7 +17,15 @@ local function new_puzzle(player_name)
 	return logic.new_puzzle(math.random)
 end
 
-local function build_equation(pos, puzzle)
+-- Offer the child the blocks this equation calls for, plus the pack's deliberate
+-- wrong answers, instead of every number from 0 to 20.
+local function publish_task_blocks(player_name, puzzle)
+	if not player_name or not (edu_api and edu_api.set_task_blocks) then return end
+	edu_api.set_task_blocks(player_name, content and content.task_blocks(puzzle) or {})
+end
+
+local function build_equation(pos, puzzle, player_name)
+	publish_task_blocks(player_name, puzzle)
 	-- Remove an old answer block, including one placed slightly off-center.
 	for _, x in ipairs({-2, -1, 0, 5, 6, 7, 8}) do
 		for y = -1, 1 do
@@ -143,7 +152,7 @@ local function check_answer(player)
 		local next_puzzle = new_puzzle(name)
 		next_puzzle.pos = puzzle.pos
 		puzzles[name] = next_puzzle
-		build_equation(puzzle.pos, next_puzzle)
+		build_equation(puzzle.pos, next_puzzle, name)
 		minetest.chat_send_player(name, S("Wonderful! A new equation is ready."))
 	else
 		minetest.sound_play("edu_number_blocks_incorrect", {to_player = name, gain = 0.9})
@@ -163,7 +172,7 @@ minetest.register_node("edu_number_blocks:board", {
 			local puzzle = new_puzzle(placer:get_player_name())
 			puzzle.pos = vector.copy(pos)
 			puzzles[placer:get_player_name()] = puzzle
-			build_equation(pos, puzzle)
+			build_equation(pos, puzzle, placer:get_player_name())
 		end
 	end,
 	on_rightclick = function(pos, _node, clicker)
@@ -173,7 +182,7 @@ minetest.register_node("edu_number_blocks:board", {
 			puzzle = new_puzzle(name)
 			puzzle.pos = vector.copy(pos)
 			puzzles[name] = puzzle
-			build_equation(pos, puzzle)
+			build_equation(pos, puzzle, name)
 			minetest.chat_send_player(name, S("Build the missing number block, then right-click the board to check it."))
 		else
 			check_answer(clicker)
@@ -249,7 +258,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			local next_puzzle = new_puzzle(name)
 			next_puzzle.pos = puzzle.pos
 			puzzles[name] = next_puzzle
-			build_equation(puzzle.pos, next_puzzle)
+			build_equation(puzzle.pos, next_puzzle, name)
 			show_board(player, S("Wonderful! Build the next answer."))
 		else
 			minetest.sound_play("edu_number_blocks_incorrect", {to_player = name, gain = 0.8})

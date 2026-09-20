@@ -71,6 +71,25 @@ local at_max = {}
 for index = 1, content.MAX_PATTERN_SEQUENCE do at_max[index] = "red" end
 check(content.validate_pack(pattern_pack(at_max)), "pattern at the maximum length accepted")
 
+-- The blocks a task calls for come from its own metadata, accepted answers first
+-- so the correct block is offered before the deliberate wrong ones.
+local cat = nil
+for _, item in ipairs(pack.items) do
+	if item.id == "english:spell-cat" then cat = item end
+end
+local cat_blocks = content.task_blocks(cat)
+check(#cat_blocks == 3, "cat offers its three letters, got " .. #cat_blocks)
+check(cat_blocks[1] == "edu_english_blocks:letter_C", "accepted blocks come first")
+
+local distractors = content.task_blocks({
+	accepted_nodes = {"edu_logic_blocks:blue"},
+	distractor_nodes = {"edu_logic_blocks:red", "edu_logic_blocks:yellow", "edu_logic_blocks:blue"},
+})
+check(#distractors == 3, "duplicate distractor dropped, got " .. #distractors)
+check(distractors[1] == "edu_logic_blocks:blue", "accepted block stays first")
+check(content.task_blocks({})[1] == nil, "task without node metadata offers no blocks")
+check(content.task_blocks(nil)[1] == nil, "missing record offers no blocks")
+
 local first = content.choose({domain = "logic"}, function() return 1 end)
 local second = content.choose({domain = "logic"}, function() return 1 end, first.id)
 check(first.id ~= second.id, "selector avoids immediate repeats when possible")

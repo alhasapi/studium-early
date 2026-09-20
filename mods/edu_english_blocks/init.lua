@@ -1,6 +1,7 @@
 local S = minetest.get_translator("edu_english_blocks")
 local logic = dofile(minetest.get_modpath("edu_english_blocks") .. "/logic.lua")
-local content = rawget(_G, "edu") and edu.content or nil
+local edu_api = rawget(_G, "edu") or nil
+local content = edu_api and edu_api.content or nil
 local spelling_items = content and content.find({domain = "english", type = "word_spelling"}) or {}
 local puzzles = {}
 local pictures = {}
@@ -19,17 +20,21 @@ end
 -- their finished textures. Built-in words get synthetic ids so the shared
 -- selector can avoid repeating them too.
 local base_words = logic.words
-local word_items, seen_words = {}, {}
+local word_items, word_item_by_word, seen_words = {}, {}, {}
 local function add_word(item)
 	local word = item.word
 	if type(word) ~= "string" or word == "" or seen_words[word] then return end
 	seen_words[word] = true
 	word_items[#word_items + 1] = item
+	word_item_by_word[word] = item
 end
 
 -- Content words come first so a pack can override the picture cue for a word.
 for _, item in ipairs(spelling_items) do
-	add_word({id = item.id, word = item.word, picture = item.picture})
+	add_word({
+		id = item.id, word = item.word, picture = item.picture,
+		accepted_nodes = item.accepted_nodes, distractor_nodes = item.distractor_nodes,
+	})
 end
 for _, word in ipairs(base_words) do
 	add_word({id = "english:builtin-" .. word:lower(), word = word})
@@ -92,7 +97,16 @@ local function letter_from_node(name)
 	return name:match("^edu_english_blocks:letter_([A-Z])$")
 end
 
-local function build_word(pos, word)
+-- Offer the letters this word needs, plus any the pack marks as deliberate
+-- confusions, instead of the whole alphabet.
+local function publish_task_blocks(player_name, word)
+	if not player_name or not (edu_api and edu_api.set_task_blocks) then return end
+	local item = word_item_by_word[word]
+	edu_api.set_task_blocks(player_name, item and content and content.task_blocks(item) or {})
+end
+
+local function build_word(pos, word, player_name)
+	publish_task_blocks(player_name, word)
 	-- Clear the previous attempt and leave blank slots for the child.
 	for _, direction in ipairs(directions) do
 		for distance = 1, 8 do
@@ -145,6 +159,7 @@ minetest.register_node("edu_english_blocks:board", {
 		if placer then
 			local word = minetest.get_meta(pos):get_string("word")
 			puzzles[placer:get_player_name()] = {word = word, pos = vector.copy(pos)}
+			publish_task_blocks(placer:get_player_name(), word)
 		end
 	end,
 	on_construct = function(pos)
@@ -159,11 +174,13 @@ minetest.register_node("edu_english_blocks:board", {
 			local word = minetest.get_meta(pos):get_string("word")
 			if word == "" then
 				word = choose_word()
-				build_word(pos, word)
+				build_word(pos, word, name)
 			end
 			puzzle = {word = word, pos = vector.copy(pos)}
 			puzzles[name] = puzzle
 		end
+		-- Covers a board whose word was chosen before this player arrived.
+		publish_task_blocks(name, puzzle.word)
 		local function read_letters(direction)
 			local letters = {}
 			for index = 1, #puzzle.word do
@@ -197,7 +214,7 @@ minetest.register_node("edu_english_blocks:board", {
 		if correct then
 			feedback(player, "★ GREAT SPELLING! ★", "edu_english_blocks_correct", true)
 			puzzles[name] = {word = choose_word(), pos = vector.copy(pos)}
-			build_word(pos, puzzles[name].word)
+			build_word(pos, puzzles[name].word, name)
 
 		else
 			feedback(player, "Try the letters again!", "edu_english_blocks_incorrect", false)

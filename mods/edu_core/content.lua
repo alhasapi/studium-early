@@ -147,6 +147,26 @@ function content.find(filter)
 	return result
 end
 
+-- The physical blocks a task calls for: its accepted answers first, then the
+-- curated distractors. An activity offers this small deliberate choice set
+-- instead of the whole category palette.
+function content.task_blocks(item)
+	local result, seen = {}, {}
+	if type(item) ~= "table" then return result end
+	for _, field in ipairs({"accepted_nodes", "distractor_nodes"}) do
+		local nodes = item[field]
+		if type(nodes) == "table" then
+			for _, node in ipairs(nodes) do
+				if type(node) == "string" and node ~= "" and not seen[node] then
+					seen[node] = true
+					result[#result + 1] = node
+				end
+			end
+		end
+	end
+	return result
+end
+
 -- Choose one record, avoiding the one used last whenever there is a choice.
 -- Every activity selects its next task through this, so the no-repeat rule is
 -- implemented and tested once instead of once per module.

@@ -15,7 +15,13 @@ _G.vector = {
 
 local content = dofile(core .. "/content.lua")
 assert(content.register_pack(dofile(core .. "/content/early_en.lua")), "starter pack registers")
-_G.edu = {content = content}
+
+-- Stand in for edu_core's task-block palette and record what the board publishes.
+local published
+_G.edu = {
+	content = content,
+	set_task_blocks = function(name, nodes) published = {name = name, nodes = nodes} end,
+}
 
 local function meta(p)
 	local k = key(p)
@@ -85,5 +91,28 @@ for _ = 1, 300 do
 	previous = word
 end
 assert(saw_beyond_pack, "words outside the content pack must still be dealt")
+
+-- The palette must offer the current word's own letters plus any pack
+-- distractors, rather than the whole alphabet.
+local player = {
+	get_player_name = function() return "tester" end,
+	get_pos = function() return {x = 0, y = 0, z = 0} end,
+	hud_add = function() return 1 end,
+	hud_remove = function() end,
+}
+board.on_construct(pos)
+board.after_place_node(pos, player)
+local word = metas[key(pos)].word
+assert(published and published.name == "tester", "task blocks published for the player")
+local source
+for _, item in ipairs(content.find({domain = "english", type = "word_spelling"})) do
+	if item.word == word then source = item end
+end
+local expected = source and content.task_blocks(source) or {}
+assert(#published.nodes == #expected,
+	"published " .. #published.nodes .. " blocks for " .. word .. ", expected " .. #expected)
+for index = 1, #expected do
+	assert(published.nodes[index] == expected[index], "published block " .. index .. " matches")
+end
 
 print("edu_english_blocks word coverage tests passed")

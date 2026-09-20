@@ -10,6 +10,9 @@ local function puzzle_from_item(item)
 		answer = item.answer,
 		skill = item.skill,
 		band = item.band,
+		-- Carried so the activity can offer exactly this task's blocks.
+		accepted_nodes = item.accepted_nodes,
+		distractor_nodes = item.distractor_nodes,
 	}
 end
 logic.puzzle_from_item = puzzle_from_item

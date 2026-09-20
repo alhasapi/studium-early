@@ -48,7 +48,13 @@ assert(content.register_pack({
 		},
 	},
 }), "pattern pack registers")
-_G.edu = {content = content}
+
+-- Stand in for edu_core's task-block palette and record what the board publishes.
+local published
+_G.edu = {
+	content = content,
+	set_task_blocks = function(name, nodes) published = {name = name, nodes = nodes} end,
+}
 
 dofile(root .. "/init.lua")
 local board = definitions["edu_logic_blocks:board"]
@@ -69,6 +75,18 @@ assert(metas["0,0,0"].values.slot == "3", "two-item slot recorded")
 assert(metas["0,0,0"].values.answer == "red", "two-item answer recorded")
 
 board.after_place_node(pos, player)
+-- The palette must offer this pattern's own colours, not all four.
+local two_item = nil
+for _, item in ipairs(content.find({domain = "logic", type = "visual_pattern"})) do
+	if item.id == "logic:ab-two-item" then two_item = item end
+end
+local expected = content.task_blocks(two_item)
+assert(published and published.name == "tester", "task blocks published for the player")
+assert(#published.nodes == #expected, "published " .. #published.nodes .. " blocks, expected " .. #expected)
+for index = 1, #expected do
+	assert(published.nodes[index] == expected[index], "published block " .. index .. " matches")
+end
+
 nodes["3,1,0"] = "edu_logic_blocks:red"
 definitions["edu_logic_blocks:red"].after_place_node({x = 3, y = 1, z = 0}, player)
 assert(sounds[#sounds] == "edu_logic_blocks_correct", "answer at the two-item slot is accepted")

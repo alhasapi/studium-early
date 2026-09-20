@@ -1,6 +1,7 @@
 local S = minetest.get_translator("edu_logic_blocks")
 local logic = dofile(minetest.get_modpath("edu_logic_blocks") .. "/logic.lua")
-local content = rawget(_G, "edu") and edu.content or nil
+local edu_api = rawget(_G, "edu") or nil
+local content = edu_api and edu_api.content or nil
 local content_patterns = content and content.find({domain = "logic", type = "visual_pattern"}) or {}
 -- A pack supplies its own curated patterns; otherwise the built-in set is used.
 local pattern_items = #content_patterns > 0 and content_patterns or logic.patterns
@@ -51,7 +52,21 @@ local function answer_slot(pos)
 	return tonumber(minetest.get_meta(pos):get_string("slot")) or DEFAULT_SLOT
 end
 
-local function build_pattern(pos, pattern)
+-- Offer the colours this pattern calls for, plus the pack's deliberate
+-- confusions, instead of every colour.
+local function publish_task_blocks(player_name, pattern)
+	if not player_name or not (edu_api and edu_api.set_task_blocks) then return end
+	edu_api.set_task_blocks(player_name, content and content.task_blocks(pattern) or {})
+end
+
+-- The pattern currently laid out on each board, so the task's blocks can be
+-- offered again when a player returns to a board they did not just build.
+local board_patterns = {}
+local function board_key(pos) return pos.x .. ":" .. pos.y .. ":" .. pos.z end
+
+local function build_pattern(pos, pattern, player_name)
+	board_patterns[board_key(pos)] = pattern
+	publish_task_blocks(player_name, pattern)
 	clear_slots(pos)
 	for index, color in ipairs(pattern.sequence) do
 		minetest.set_node({x = pos.x + index, y = pos.y + 1, z = pos.z}, {
@@ -87,7 +102,10 @@ minetest.register_node("edu_logic_blocks:board", {
 	inventory_image = "edu_logic_blocks_board.png", tiles = {"edu_logic_blocks_board.png"},
 	groups = {choppy = 2, oddly_breakable_by_hand = 2},
 	after_place_node = function(pos, placer)
-		if placer then puzzles[placer:get_player_name()] = {pos = vector.copy(pos)} end
+		if placer then
+			puzzles[placer:get_player_name()] = {pos = vector.copy(pos)}
+			publish_task_blocks(placer:get_player_name(), board_patterns[board_key(pos)])
+		end
 	end,
 	on_construct = function(pos)
 		build_pattern(pos, choose_pattern())
@@ -120,9 +138,11 @@ minetest.register_node("edu_logic_blocks:board", {
 		local target = minetest.get_meta(pos):get_string("answer")
 		if logic.is_correct({answer = target}, answer) then
 			feedback(player, true)
-			build_pattern(pos, choose_pattern())
+			build_pattern(pos, choose_pattern(), name)
 		else
 			feedback(player, false)
+			-- A returning player may not have this pattern's blocks yet.
+			publish_task_blocks(name, board_patterns[board_key(pos)])
 		end
 		puzzles[name] = {pos = vector.copy(pos)}
 	end,

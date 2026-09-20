@@ -34,7 +34,13 @@ _G.minetest = {
 
 local content = dofile(core .. "/content.lua")
 assert(content.register_pack(dofile(core .. "/content/early_en.lua")), "starter pack registers")
-_G.edu = {content = content}
+
+-- Stand in for edu_core's task-block palette and record what the board publishes.
+local published
+_G.edu = {
+	content = content,
+	set_task_blocks = function(name, nodes) published = {name = name, nodes = nodes} end,
+}
 
 local seed = 20260911
 math.random = function(low, high)
@@ -67,10 +73,19 @@ end
 
 local previous, used = nil, {}
 for _ = 1, 40 do
+	published = nil
 	board.after_place_node(pos, player)
 	local item = current_item()
 	assert(item, "board must deal an equation from the content pack")
 	assert(item.id ~= previous, "equation must rotate, repeated " .. item.id)
+	-- The palette must offer this equation's own blocks, not all of 0 to 20.
+	local expected = content.task_blocks(item)
+	assert(published and published.name == "tester", "task blocks published for the player")
+	assert(#published.nodes == #expected,
+		"published " .. #published.nodes .. " blocks, expected " .. #expected)
+	for index = 1, #expected do
+		assert(published.nodes[index] == expected[index], "published block " .. index .. " matches")
+	end
 	used[item.id] = true
 	previous = item.id
 end
