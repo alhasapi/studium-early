@@ -15,6 +15,10 @@ local SUPPORTED_TYPES = {
 	visual_pattern = true,
 }
 
+-- A pattern board draws the sequence on one row with the answer slot after it,
+-- so this bounds how far a pattern may run. Shared with edu_logic_blocks.
+content.MAX_PATTERN_SEQUENCE = 6
+
 local function fail(errors, id, message)
 	errors[#errors + 1] = (id or "<pack>") .. ": " .. message
 end
@@ -63,7 +67,22 @@ local function validate_answer(item, errors)
 		if answer ~= item.word then fail(errors, item.id, "answer must match spelling word") end
 		if type(item.picture) ~= "string" or item.picture == "" then fail(errors, item.id, "missing picture cue") end
 	elseif item.type == "visual_pattern" then
-		if not is_list(item.sequence) or #item.sequence < 2 then fail(errors, item.id, "sequence must contain at least two items") end
+		if not is_list(item.sequence) then
+			fail(errors, item.id, "sequence must be a list")
+		else
+			if #item.sequence < 2 then fail(errors, item.id, "sequence must contain at least two items") end
+			-- Unbounded sequences used to be accepted while the board assumed
+			-- exactly three: a short one left a gap and a long one overwrote the
+			-- question marker.
+			if #item.sequence > content.MAX_PATTERN_SEQUENCE then
+				fail(errors, item.id, "sequence must contain at most " .. content.MAX_PATTERN_SEQUENCE .. " items")
+			end
+			for index, entry in ipairs(item.sequence) do
+				if type(entry) ~= "string" or entry == "" then
+					fail(errors, item.id, "sequence entry " .. index .. " must be a non-empty string")
+				end
+			end
+		end
 		if type(answer) ~= "string" or answer == "" then fail(errors, item.id, "missing visual pattern answer") end
 	else
 		fail(errors, item.id, "unsupported type " .. tostring(item.type))

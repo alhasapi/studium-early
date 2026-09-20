@@ -43,6 +43,34 @@ local bad_node = {
 ok, errors = content.validate_pack(bad_node)
 check(not ok and table.concat(errors, " "):match("unsupported node name"), "unsupported node names rejected")
 
+local function pattern_pack(sequence)
+	return {
+		id = "bad_pattern", version = 1, locale = "en",
+		items = {
+			{id = "logic:bad-sequence", domain = "logic", skill = "repeating_patterns", band = 1,
+				type = "visual_pattern", prompt = {kind = "missing_item"}, sequence = sequence, answer = "red",
+				provenance = {status = "reviewed"}},
+		},
+	}
+end
+
+ok, errors = content.validate_pack(pattern_pack({"red"}))
+check(not ok and table.concat(errors, " "):match("at least two items"), "one-item pattern rejected")
+
+local too_long = {}
+for index = 1, content.MAX_PATTERN_SEQUENCE + 1 do too_long[index] = "red" end
+ok, errors = content.validate_pack(pattern_pack(too_long))
+check(not ok and table.concat(errors, " "):match("at most"), "over-long pattern rejected")
+
+ok, errors = content.validate_pack(pattern_pack({"red", 3}))
+check(not ok and table.concat(errors, " "):match("sequence entry 2"), "non-string pattern entry rejected")
+
+ok = content.validate_pack(pattern_pack({"red", "blue"}))
+check(ok, "two-item pattern accepted")
+local at_max = {}
+for index = 1, content.MAX_PATTERN_SEQUENCE do at_max[index] = "red" end
+check(content.validate_pack(pattern_pack(at_max)), "pattern at the maximum length accepted")
+
 local first = content.choose({domain = "logic"}, function() return 1 end)
 local second = content.choose({domain = "logic"}, function() return 1 end, first.id)
 check(first.id ~= second.id, "selector avoids immediate repeats when possible")

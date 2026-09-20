@@ -30,11 +30,27 @@ local function color_from_node(name)
 	return nil
 end
 
+-- The pattern occupies the row to the left of the answer slot, so the whole row
+-- can be cleared generously without touching blocks placed elsewhere.
+local MAX_SEQUENCE = rawget(_G, "edu") and edu.content and edu.content.MAX_PATTERN_SEQUENCE or 6
+local DEFAULT_SLOT = 4
+
 local function clear_slots(pos)
-	for x = 1, 4 do
+	for x = 1, MAX_SEQUENCE + 1 do
 		local p = {x = pos.x + x, y = pos.y + 1, z = pos.z}
-		if color_from_node(minetest.get_node(p).name) then minetest.remove_node(p) end
+		local name = minetest.get_node(p).name
+		-- The question marker is cleared too: a shorter pattern must not leave
+		-- the previous, longer pattern's marker behind further along the row.
+		if color_from_node(name) or name == "edu_logic_blocks:question" then
+			minetest.remove_node(p)
+		end
 	end
+end
+
+-- Where the child must place the answer. Recorded when the pattern is built so a
+-- pattern of any accepted length gets a slot after its own last block.
+local function answer_slot(pos)
+	return tonumber(minetest.get_meta(pos):get_string("slot")) or DEFAULT_SLOT
 end
 
 local function build_pattern(pos, pattern)
@@ -44,10 +60,14 @@ local function build_pattern(pos, pattern)
 			name = "edu_logic_blocks:" .. color,
 		})
 	end
-	minetest.set_node({x = pos.x + 4, y = pos.y + 1, z = pos.z}, {
+	-- The answer slot follows the pattern rather than sitting at a fixed offset.
+	local slot = #pattern.sequence + 1
+	minetest.set_node({x = pos.x + slot, y = pos.y + 1, z = pos.z}, {
 		name = "edu_logic_blocks:question",
 	})
-	minetest.get_meta(pos):set_string("answer", pattern.answer)
+	local meta = minetest.get_meta(pos)
+	meta:set_string("answer", pattern.answer)
+	meta:set_string("slot", tostring(slot))
 end
 
 local function feedback(player, correct)
@@ -81,7 +101,7 @@ minetest.register_node("edu_logic_blocks:board", {
 		-- of the puzzle rather than an answer, and the final pattern block sits
 		-- directly beside the slot. Of what remains, the block nearest the slot
 		-- is the one the child meant.
-		local slot = {x = pos.x + 4, y = pos.y + 1, z = pos.z}
+		local slot = {x = pos.x + answer_slot(pos), y = pos.y + 1, z = pos.z}
 		local answer, best_distance
 		for x = -1, 1 do
 			for y = -1, 1 do
@@ -119,7 +139,9 @@ for _, color in ipairs(colors) do
 		after_place_node = function(pos, placer)
 			if not placer then return end
 			local puzzle = puzzles[placer:get_player_name()]
-			if puzzle and puzzle.pos and math.abs(pos.x - (puzzle.pos.x + 4)) <= 1 and
+			if not puzzle or not puzzle.pos then return end
+			local slot = answer_slot(puzzle.pos)
+			if math.abs(pos.x - (puzzle.pos.x + slot)) <= 1 and
 				math.abs(pos.y - (puzzle.pos.y + 1)) <= 1 and math.abs(pos.z - puzzle.pos.z) <= 1 then
 				local board = minetest.get_node(puzzle.pos)
 				if board.name == "edu_logic_blocks:board" then
