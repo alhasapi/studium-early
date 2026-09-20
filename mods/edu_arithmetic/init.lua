@@ -21,15 +21,14 @@ local function show_quiz(player, message)
 			"size[12,8]",
 			"style_type[label;font_size=20]",
 			"style[submit,close;font_size=18]",
-			"label[1,0.8;Arithmetic Adventure]",
-			"label[1,1.8;Solve this puzzle:]",
+			"label[1,0.8;", S("Arithmetic Adventure"), "]",
+			"label[1,1.8;", S("Solve this puzzle:"), "]",
 			"label[1,2.6;", edu.escape(question.text), "]",
-			"field[1,3.45;5,1;answer;Your answer;]",
-			"button[1,4.65;3,1;submit;Check]",
-			"button[4.3,4.65;3,1;close;Done]",
+			"field[1,3.45;5,1;answer;", S("Your answer"), ";]",
+			"button[1,4.65;3,1;submit;", S("Check"), "]",
+			"button[4.3,4.65;3,1;close;", S("Done"), "]",
 			feedback,
-			"label[1,7.1;Solved: ", tostring(progress.solved), "   Attempts: ",
-				tostring(progress.attempts), "]",
+			"label[1,7.1;", S("Solved: @1   Attempts: @2", progress.solved, progress.attempts), "]",
 		}, "")
 	minetest.show_formspec(name, "edu_arithmetic:quiz", formspec)
 end
@@ -89,7 +88,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if not question then
 		-- The formspec may outlive its in-memory question after a reload or
 		-- reconnect. Re-open it safely instead of crashing the server callback.
-		show_quiz(player, "Please try this question again.")
+		show_quiz(player, S("Please try this question again."))
 		return true
 	end
 
@@ -100,10 +99,10 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if answer and answer == question.answer then
 		quiz[name] = make_question()
 		minetest.sound_play("default_place_node", {to_player = name, gain = 0.8})
-		show_quiz(player, "Great job! Try the next one.")
+		show_quiz(player, S("Great job! Try the next one."))
 	else
 		minetest.sound_play("default_dig_crumbly", {to_player = name, gain = 0.6})
-		show_quiz(player, "Not quite. Try again!")
+		show_quiz(player, S("Not quite. Try again!"))
 	end
 	return true
 end)

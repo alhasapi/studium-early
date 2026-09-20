@@ -97,12 +97,12 @@ local function show_board(player, message)
 		table.concat({
 			"formspec_version[4]", "size[8,5]",
 			"style_type[label;font_size=20]",
-			"label[1,0.7;Complete the equation with a number block:]",
+			"label[1,0.7;", S("Complete the equation with a number block:"), "]",
 			"label[1,1.7;", text, "]",
-			"label[1,2.6;Place your answer in the empty space beside the equation, then check.]", 
+			"label[1,2.6;", S("Place your answer in the empty space beside the equation, then check."), "]",
 			feedback,
-			"button[1,4.1;2.5,0.8;check;Check answer]",
-			"button[4,4.1;2.5,0.8;close;Done]",
+			"button[1,4.1;2.5,0.8;check;", S("Check answer"), "]",
+			"button[4,4.1;2.5,0.8;close;", S("Done"), "]",
 		}, ""))
 end
 
@@ -178,8 +178,8 @@ local function check_answer(player)
 		record_outcome(name, puzzle, true)
 		minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.3})
 		visual_feedback(player, true)
-		flash_message(player, "★  CORRECT!  ★", 0x66ff66)
-		minetest.chat_send_player(name, "★ CORRECT! A new equation is ready.")
+		flash_message(player, S("★  CORRECT!  ★"), 0x66ff66)
+		minetest.chat_send_player(name, S("★ CORRECT! A new equation is ready."))
 		local next_puzzle = new_puzzle(name)
 		next_puzzle.pos = puzzle.pos
 		puzzles[name] = next_puzzle
@@ -189,7 +189,7 @@ local function check_answer(player)
 		record_outcome(name, puzzle, false)
 		minetest.sound_play("edu_number_blocks_incorrect", {to_player = name, gain = 0.9})
 		visual_feedback(player, false)
-		flash_message(player, "✦  TRY AGAIN!  ✦", 0xffcc66)
+		flash_message(player, S("✦  TRY AGAIN!  ✦"), 0xffcc66)
 		minetest.chat_send_player(name, S("Not yet. Try a different number block."))
 	end
 end

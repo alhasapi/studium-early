@@ -1,0 +1,77 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the edu_number_blocks package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: edu_number_blocks\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 1970-01-01 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Equation: @1"
+msgstr ""
+
+msgid "Complete the equation with a number block:"
+msgstr ""
+
+msgid "Place your answer in the empty space beside the equation, then check."
+msgstr ""
+
+msgid "Check answer"
+msgstr ""
+
+msgid "Done"
+msgstr ""
+
+msgid "Right-click a puzzle board to create an equation first."
+msgstr ""
+
+msgid "★  CORRECT!  ★"
+msgstr ""
+
+msgid "★ CORRECT! A new equation is ready."
+msgstr ""
+
+msgid "Wonderful! A new equation is ready."
+msgstr ""
+
+msgid "✦  TRY AGAIN!  ✦"
+msgstr ""
+
+msgid "Not yet. Try a different number block."
+msgstr ""
+
+msgid "Arithmetic Puzzle Board (?)"
+msgstr ""
+
+msgid "Build the missing number block, then right-click the board to check it."
+msgstr ""
+
+msgid "Number @1"
+msgstr ""
+
+msgid "Operation @1"
+msgstr ""
+
+msgid "Give yourself the physical arithmetic puzzle kit"
+msgstr ""
+
+msgid "Player is not online."
+msgstr ""
+
+msgid "Puzzle kit added. Place the board and build with blocks."
+msgstr ""
+
+msgid "Open a board first."
+msgstr ""
+
+msgid "Wonderful! Build the next answer."
+msgstr ""

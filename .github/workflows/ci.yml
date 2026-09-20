@@ -15,7 +15,7 @@ jobs:
       - name: Install Lua
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends lua5.1
+          sudo apt-get install -y --no-install-recommends lua5.1 gettext
           sudo ln -sf "$(command -v lua5.1)" /usr/local/bin/lua
           sudo ln -sf "$(command -v luac5.1)" /usr/local/bin/luac
           lua -v
@@ -23,6 +23,11 @@ jobs:
 
       - name: Run regression checks
         run: ./tests/run.sh
+
+      - name: Check translation templates are current
+        run: |
+          ./tools/update-locale.sh
+          git diff --exit-code -- 'mods/*/locale'
 
   live-smoke:
     name: Live Luanti startup

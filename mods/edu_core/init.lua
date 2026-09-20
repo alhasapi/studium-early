@@ -2,6 +2,8 @@
 -- This mod intentionally stays small: content modules own their lessons,
 -- while this module provides shared player progress storage.
 
+local S = minetest.get_translator("edu_core")
+
 edu = rawget(_G, "edu") or {}
 edu.storage = minetest.get_mod_storage()
 edu.content = dofile(minetest.get_modpath("edu_core") .. "/content.lua")
@@ -142,34 +144,34 @@ local function open_palette(name, command, page)
 	-- Remember the exact list shown so a pick maps back to the same entry.
 	palette_pages[name] = {command = command, page = page, items = items}
 	update_palette_inventory(name, command, page)
-	local form = {"formspec_version[4]", "size[9,5]", "label[3.2,0.3;Choose a block]"}
+	local form = {"formspec_version[4]", "size[9,5]", "label[3.2,0.3;" .. S("Choose a block") .. "]"}
 	for index = first, last do
 		local slot = index - first
 		local x = 0.5 + (slot % 5) * 1.7
 		local y = 0.8 + math.floor(slot / 5) * 1.7
 		form[#form + 1] = string.format("item_image_button[%g,%g;1.4,1.4;%s;pick_%d;]", x, y, items[index], index)
 	end
-	if page > 1 then form[#form + 1] = "button[0.5,4.1;2,0.7;previous;Back]" end
-	if last < #items then form[#form + 1] = "button[6.5,4.1;2,0.7;next;More]" end
+	if page > 1 then form[#form + 1] = "button[0.5,4.1;2,0.7;previous;" .. S("Back") .. "]" end
+	if last < #items then form[#form + 1] = "button[6.5,4.1;2,0.7;next;" .. S("More") .. "]" end
 	minetest.show_formspec(name, "edu_core:palette", table.concat(form, ""))
 end
 
 local function open_toolbox(name)
 	local current = active_commands[name]
-	local current_button = current and "button[1.5,3.55;5,0.65;current_task;Current task blocks]" or ""
+	local current_button = current and "button[1.5,3.55;5,0.65;current_task;" .. S("Current task blocks") .. "]" or ""
 	minetest.show_formspec(name, "edu_core:toolbox", table.concat({
 		"formspec_version[4]", "size[8,5]",
-		"label[2.2,0.35;Studium]",
+		"label[2.2,0.35;" .. S("Studium") .. "]",
 		"item_image_button[0.5,1;2,2;edu_number_blocks:board;arithmetic;]",
 		"item_image_button[3,1;2,2;edu_english_blocks:board;english;]",
 		"item_image_button[5.5,1;2,2;edu_logic_blocks:board;logic;]",
-		"label[0.65,3.2;Arithmetic]", "label[3.25,3.2;English]", "label[5.85,3.2;Logic]",
+		"label[0.65,3.2;" .. S("Arithmetic") .. "]", "label[3.25,3.2;" .. S("English") .. "]", "label[5.85,3.2;" .. S("Logic") .. "]",
 		current_button,
 	}, ""))
 end
 
 minetest.register_node("edu_core:toolbox", {
-	description = "Studium Toolbox",
+	description = S("Studium Toolbox"),
 	inventory_image = "edu_core_toolbox.png",
 	tiles = {"edu_core_toolbox.png"},
 	groups = {choppy = 2, oddly_breakable_by_hand = 2},
@@ -179,7 +181,7 @@ minetest.register_node("edu_core:toolbox", {
 })
 
 minetest.register_chatcommand("edu_menu", {
-	description = "Open the Studium activity toolbox",
+	description = S("Open the Studium activity toolbox"),
 	func = function(name)
 		open_toolbox(name)
 		return true
@@ -224,7 +226,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			for index, item in ipairs(items) do
 				if fields["pick_" .. index] ~= nil then
 					player:get_inventory():set_stack("main", 2, item)
-					minetest.chat_send_player(name, "Block ready in hotbar slot 2.")
+					minetest.chat_send_player(name, S("Block ready in hotbar slot 2."))
 					minetest.close_formspec(name, "edu_core:palette")
 					break
 				end

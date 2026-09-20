@@ -1,4 +1,15 @@
 local root = (...)
+local translated = {}
+local function translator()
+	return function(text, ...)
+		translated[#translated + 1] = text
+		local args = {...}
+		return (tostring(text):gsub("@(%d+)", function(index)
+			return tostring(args[tonumber(index)] or "")
+		end))
+	end
+end
+
 local nodes, metas, definitions, sounds = {}, {}, {}, {}
 local function key(p) return p.x .. "," .. p.y .. "," .. p.z end
 local function meta(p)
@@ -11,11 +22,11 @@ _G.vector = {
 	add = function(a, b) return {x = a.x + b.x, y = a.y + b.y, z = a.z + b.z} end,
 }
 _G.minetest = {
-	get_translator = function() return function(s) return s end end,
+	get_translator = translator,
 	get_modpath = function() return root end,
 	register_node = function(n, d) definitions[n] = d end,
 	register_chatcommand = function() end,
-	register_on_player_receive_fields = function() end,
+	register_on_player_receive_fields = function(callback) definitions.receive_fields = callback end,
 	get_node = function(p) return {name = nodes[key(p)] or "air"} end,
 	set_node = function(p, n) nodes[key(p)] = n.name end,
 	remove_node = function(p) nodes[key(p)] = "air" end,
@@ -65,5 +76,27 @@ for index = 1, 4 do
 end
 assert(nodes["5,0,0"] == "air", "answer block removed with the board")
 assert(nodes["6,0,0"] == "air", "second answer block removed with the board")
+
+-- Exercise the formspec branch so its labels pass through S() too.
+definitions.receive_fields(player, "edu_number_blocks:board", {check = true})
+
+
+-- Regression: these strings used to be written straight into a formspec or chat
+-- message, so no translator could ever reach them.
+local function assert_translated(expected)
+	for _, text in ipairs(translated) do
+		if text == expected then return end
+	end
+	assert(false, "string never passed through S(): " .. expected)
+end
+
+for _, expected in ipairs({
+	"Complete the equation with a number block:",
+	"Place your answer in the empty space beside the equation, then check.",
+	"Check answer", "Done", "★  CORRECT!  ★", "★ CORRECT! A new equation is ready.",
+	"✦  TRY AGAIN!  ✦",
+}) do
+	assert_translated(expected)
+end
 
 print("edu_number_blocks integration tests passed")

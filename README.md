@@ -15,7 +15,7 @@ From Linux/macOS:
 ./tests/run.sh
 ```
 
-See [Linux installation](docs/install-linux.md), [Windows installation](docs/install-windows.md), and [testing](docs/testing.md).
+See [Linux installation](docs/install-linux.md), [Windows installation](docs/install-windows.md), [testing](docs/testing.md), and [localization](docs/localization.md).
 
 ## License
 

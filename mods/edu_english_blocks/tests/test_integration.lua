@@ -1,4 +1,15 @@
 local root = (...)
+local translated = {}
+local function translator()
+	return function(text, ...)
+		translated[#translated + 1] = text
+		local args = {...}
+		return (tostring(text):gsub("@(%d+)", function(index)
+			return tostring(args[tonumber(index)] or "")
+		end))
+	end
+end
+
 local nodes, metas, definitions, sounds = {}, {}, {}, {}
 local function key(p) return p.x .. "," .. p.y .. "," .. p.z end
 local function meta(p)
@@ -15,7 +26,7 @@ _G.vector = {
 	add = function(a, b) return {x = a.x + b.x, y = a.y + b.y, z = a.z + b.z} end,
 }
 _G.minetest = {
-	get_translator = function() return function(text) return text end end,
+	get_translator = translator,
 	get_modpath = function() return root end,
 	register_node = function(name, definition) definitions[name] = definition end,
 	registered_nodes = definitions,
@@ -59,6 +70,13 @@ for index = 1, 3 do
 	assert(nodes[key({x = pos.x + index, y = pos.y + 1, z = pos.z})] == "air",
 		"previous word's letter " .. index .. " cleared for the new word")
 end
+-- An incorrect attempt is reported, and counted, as well.
+for index = 1, 3 do
+	nodes[key({x = pos.x + index, y = pos.y + 1, z = pos.z})] = "edu_english_blocks:letter_Z"
+end
+board.on_rightclick(pos, {}, player)
+assert(sounds[#sounds] == "edu_english_blocks_incorrect", "wrong word reported")
+
 -- Digging the board must not strand the letters and picture it placed.
 assert(board.on_destruct, "board cleans up when dug")
 for index = 1, 3 do
@@ -72,5 +90,19 @@ for index = 1, 3 do
 		"letter " .. index .. " removed with the board")
 end
 assert(nodes[key({x = pos.x - 1, y = pos.y + 1, z = pos.z + 1})] == "air", "picture removed with the board")
+
+
+-- Regression: these strings used to be written straight into a formspec or chat
+-- message, so no translator could ever reach them.
+local function assert_translated(expected)
+	for _, text in ipairs(translated) do
+		if text == expected then return end
+	end
+	assert(false, "string never passed through S(): " .. expected)
+end
+
+for _, expected in ipairs({"★ GREAT SPELLING! ★", "Try the letters again!"}) do
+	assert_translated(expected)
+end
 
 print("edu_english_blocks integration tests passed")

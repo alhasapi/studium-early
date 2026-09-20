@@ -275,13 +275,13 @@ minetest.register_node("edu_english_blocks:board", {
 		end
 		if correct then
 			record_outcome(name, puzzle.word, true)
-			feedback(player, "★ GREAT SPELLING! ★", "edu_english_blocks_correct", true)
+			feedback(player, S("★ GREAT SPELLING! ★"), "edu_english_blocks_correct", true)
 			puzzles[name] = {word = choose_word(), pos = vector.copy(pos)}
 			build_word(pos, puzzles[name].word, name)
 
 		else
 			record_outcome(name, puzzle.word, false)
-			feedback(player, "Try the letters again!", "edu_english_blocks_incorrect", false)
+			feedback(player, S("Try the letters again!"), "edu_english_blocks_incorrect", false)
 		end
 	end,
 })

@@ -16,6 +16,18 @@ end
 
 _G.ItemStack = function(_) return {is_empty = function() return true end} end
 
+local translated = {}
+local function translator()
+	return function(text, ...)
+		translated[#translated + 1] = text
+		local args = {...}
+		return (tostring(text):gsub("@(%d+)", function(index)
+			return tostring(args[tonumber(index)] or "")
+		end))
+	end
+end
+
+
 local progress = {solved = 0, attempts = 0}
 local skills = {}
 _G.edu = {
@@ -34,7 +46,7 @@ _G.edu = {
 }
 
 _G.minetest = {
-	get_translator = function() return function(text) return text end end,
+	get_translator = translator,
 	get_modpath = function() return root end,
 	register_node = function(name, definition) definitions[name] = definition end,
 	register_craft = function(recipe) crafts[#crafts + 1] = recipe end,
@@ -106,5 +118,23 @@ assert(definitions.receive_fields(player, "some_other_mod:form", {}) == false, "
 
 -- Every attempt is counted against the kiosk's own skill, not just the total.
 assert(skills.kiosk_arithmetic == 3, "attempts recorded per skill, got " .. tostring(skills.kiosk_arithmetic))
+
+
+-- Regression: these strings used to be written straight into a formspec or chat
+-- message, so no translator could ever reach them.
+local function assert_translated(expected)
+	for _, text in ipairs(translated) do
+		if text == expected then return end
+	end
+	assert(false, "string never passed through S(): " .. expected)
+end
+
+for _, expected in ipairs({
+	"Arithmetic Adventure", "Solve this puzzle:", "Your answer", "Check", "Done",
+	"Please try this question again.", "Great job! Try the next one.", "Not quite. Try again!",
+	"Solved: @1   Attempts: @2",
+}) do
+	assert_translated(expected)
+end
 
 print("edu_arithmetic integration tests passed")
