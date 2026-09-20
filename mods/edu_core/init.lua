@@ -68,20 +68,6 @@ function edu.escape(text)
 	return minetest.formspec_escape(tostring(text))
 end
 
-local function arrange_hotbar(player, command)
-	local items = {
-		edu_blocks = {"edu_number_blocks:board", "edu_number_blocks:number_0", "edu_number_blocks:number_1", "edu_number_blocks:number_2", "edu_number_blocks:number_3", "edu_number_blocks:number_4", "edu_number_blocks:number_5", "edu_number_blocks:number_6"},
-		edu_english = {"edu_english_blocks:board", "edu_english_blocks:letter_A", "edu_english_blocks:letter_B", "edu_english_blocks:letter_C", "edu_english_blocks:letter_D", "edu_english_blocks:letter_E", "edu_english_blocks:letter_F", "edu_english_blocks:letter_G"},
-		edu_logic = {"edu_logic_blocks:board", "edu_logic_blocks:red", "edu_logic_blocks:blue", "edu_logic_blocks:yellow", "edu_logic_blocks:green"},
-	}
-	local inv = player:get_inventory()
-	for slot, item in ipairs(items[command] or {}) do
-		-- The hotbar is the child-facing activity palette. Replace it so
-		-- stale blocks from another activity cannot hide the new selection.
-		inv:set_stack("main", slot, item)
-	end
-end
-
 local palette_pages = {}
 local active_commands = {}
 local palette_items = {
@@ -246,7 +232,6 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if command and minetest.registered_chatcommands[command] then
 		active_commands[name] = command
 		local success, message = minetest.registered_chatcommands[command].func(name)
-		arrange_hotbar(player, command)
 		if message then minetest.chat_send_player(name, message) end
 		minetest.log("action", "Studium toolbox selected " .. command .. " for " .. name .. " (" .. tostring(success) .. ")")
 		-- Do not interrupt board placement with a block picker. The first page
