@@ -16,3 +16,9 @@ From Linux/macOS:
 ```
 
 See [Linux installation](docs/install-linux.md), [Windows installation](docs/install-windows.md), and [testing](docs/testing.md).
+
+## License
+
+Studium is released under the [MIT License](LICENSE), covering its Lua code, content data, and original assets.
+
+Each `mods/edu_*` directory ships its own copy of the license as `license.txt`, so a mod stays licensed when it is copied into a Luanti `mods` folder on its own.
