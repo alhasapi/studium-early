@@ -52,11 +52,26 @@ jobs:
 
       - name: Install Minetest Game
         run: |
-          # The smoke test loads a game, which no distribution package supplies
-          # here. Fetch it the same way a player would.
+          # No distribution package supplies a game here, so fetch one. It has to
+          # match the engine: a newer Minetest Game refuses to load on an older
+          # engine, which is what the runner's package provides.
+          export PATH="$PATH:/usr/games"
+          ENGINE=""
+          for candidate in luanti minetest minetestserver; do
+            if command -v "$candidate" >/dev/null 2>&1; then
+              ENGINE="$(command -v "$candidate")"
+              break
+            fi
+          done
+          VERSION="$("$ENGINE" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)"
+          echo "engine: $ENGINE version: $VERSION"
+          GAME=https://github.com/luanti-org/minetest_game
           mkdir -p "$HOME/.minetest/games"
-          git clone --depth 1 https://github.com/luanti-org/minetest_game \
-            "$HOME/.minetest/games/minetest_game"
+          if [ -n "$VERSION" ] && git ls-remote --tags "$GAME" "refs/tags/$VERSION" | grep -q .; then
+            git clone --depth 1 --branch "$VERSION" "$GAME" "$HOME/.minetest/games/minetest_game"
+          else
+            git clone --depth 1 "$GAME" "$HOME/.minetest/games/minetest_game"
+          fi
           ls "$HOME/.minetest/games"
 
       - name: Run live smoke test
