@@ -3,14 +3,53 @@ local logic = dofile(minetest.get_modpath("edu_english_blocks") .. "/logic.lua")
 local spelling_items = rawget(_G, "edu") and edu.content and edu.content.find({domain = "english", type = "word_spelling"}) or {}
 local puzzles = {}
 local pictures = {}
+
+-- Picture cues come from content packs but the nodes that show them are
+-- registered here. Derive the node name and the texture name from one
+-- normalised key so a cue can never reference a node that was not registered.
+local function picture_key(cue)
+	local key = tostring(cue):lower():gsub("%.png$", "")
+	return (key:gsub("[^a-z0-9_]", "_"))
+end
+
 if #spelling_items > 0 then logic.words = {} end
 for _, item in ipairs(spelling_items) do
 	logic.words[#logic.words + 1] = item.word
-	pictures[item.word] = item.picture
+	pictures[item.word] = picture_key(item.picture)
 end
 for _, word in ipairs(logic.words) do
-	pictures[word] = pictures[word] or word:lower()
+	pictures[word] = pictures[word] or picture_key(word)
 end
+
+local sorted_picture_keys = {}
+do
+	local seen = {}
+	for _, word in ipairs(logic.words) do
+		local key = pictures[word]
+		if key and key ~= "" and not seen[key] then
+			seen[key] = true
+			sorted_picture_keys[#sorted_picture_keys + 1] = key
+		end
+	end
+	table.sort(sorted_picture_keys)
+end
+
+-- Tell a content author exactly which asset is missing instead of leaving them
+-- with a blank block and no explanation.
+if io and io.open then
+	local texture_dir = minetest.get_modpath("edu_english_blocks") .. "/textures/"
+	for _, key in ipairs(sorted_picture_keys) do
+		local texture = "edu_english_blocks_picture_" .. key .. ".png"
+		local file = io.open(texture_dir .. texture, "rb")
+		if file then
+			file:close()
+		else
+			minetest.log("warning", "[edu_english_blocks] missing texture " .. texture ..
+				" for picture cue '" .. key .. "'")
+		end
+	end
+end
+
 local directions = {
 	{x = 1, y = 0, z = 0}, {x = -1, y = 0, z = 0},
 	{x = 0, y = 0, z = 1}, {x = 0, y = 0, z = -1},
@@ -41,12 +80,14 @@ local function build_word(pos, word)
 			end
 		end
 	end
-	local picture = pictures[word]
+	local picture = pictures[word] or picture_key(word)
+	-- Record the word before placing the picture, so a failure here cannot leave
+	-- the board permanently answerless.
+	minetest.get_meta(pos):set_string("word", word)
+	minetest.get_meta(pos):set_string("infotext", S("Look at the picture and build the word"))
 	minetest.set_node({x = pos.x - 1, y = pos.y + 1, z = pos.z + 1}, {
 		name = "edu_english_blocks:picture_" .. picture,
 	})
-	minetest.get_meta(pos):set_string("word", word)
-	minetest.get_meta(pos):set_string("infotext", S("Look at the picture and build the word"))
 end
 
 local function feedback(player, text, sound, correct)
@@ -160,11 +201,10 @@ for code = string.byte("A"), string.byte("Z") do
 	})
 end
 
-for _, word in ipairs(logic.words) do
-	local picture = word:lower()
-	minetest.register_node("edu_english_blocks:picture_" .. picture, {
+for _, key in ipairs(sorted_picture_keys) do
+	minetest.register_node("edu_english_blocks:picture_" .. key, {
 		description = S("Picture"),
-		tiles = {"edu_english_blocks_picture_" .. picture .. ".png"},
+		tiles = {"edu_english_blocks_picture_" .. key .. ".png"},
 		groups = {not_in_creative_inventory = 1},
 	})
 end
