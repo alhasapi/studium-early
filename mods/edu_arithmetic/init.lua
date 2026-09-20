@@ -93,17 +93,15 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		return true
 	end
 
-	local progress = edu.get_progress(name)
-	progress.attempts = progress.attempts + 1
 	local answer = tonumber(fields.answer)
+	-- The kiosk has its own generated questions, so it counts against its own
+	-- skill rather than one of the curated arithmetic skills.
+	edu.record_result(name, "kiosk_arithmetic", answer ~= nil and answer == question.answer)
 	if answer and answer == question.answer then
-		progress.solved = progress.solved + 1
 		quiz[name] = make_question()
-		edu.save_progress(name, progress)
 		minetest.sound_play("default_place_node", {to_player = name, gain = 0.8})
 		show_quiz(player, "Great job! Try the next one.")
 	else
-		edu.save_progress(name, progress)
 		minetest.sound_play("default_dig_crumbly", {to_player = name, gain = 0.6})
 		show_quiz(player, "Not quite. Try again!")
 	end

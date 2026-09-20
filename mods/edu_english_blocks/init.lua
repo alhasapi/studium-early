@@ -32,7 +32,7 @@ end
 -- Content words come first so a pack can override the picture cue for a word.
 for _, item in ipairs(spelling_items) do
 	add_word({
-		id = item.id, word = item.word, picture = item.picture,
+		id = item.id, word = item.word, picture = item.picture, skill = item.skill,
 		accepted_nodes = item.accepted_nodes, distractor_nodes = item.distractor_nodes,
 	})
 end
@@ -142,6 +142,17 @@ local function direction_filled(pos, direction, length)
 		if not found[index] then return false end
 	end
 	return true
+end
+
+-- Built-in words have no content record, so they get their own bucket rather
+-- than being folded into a curated skill.
+local BUILTIN_SKILL = "english_builtin_spelling"
+
+-- Count the attempt against the word's own skill as well as the total.
+local function record_outcome(player_name, word, correct)
+	if not (edu_api and edu_api.record_result) then return end
+	local item = word_item_by_word[word]
+	edu_api.record_result(player_name, (item and item.skill) or BUILTIN_SKILL, correct)
 end
 
 -- Offer the letters this word needs, plus any the pack marks as deliberate
@@ -263,11 +274,13 @@ minetest.register_node("edu_english_blocks:board", {
 			end
 		end
 		if correct then
+			record_outcome(name, puzzle.word, true)
 			feedback(player, "★ GREAT SPELLING! ★", "edu_english_blocks_correct", true)
 			puzzles[name] = {word = choose_word(), pos = vector.copy(pos)}
 			build_word(pos, puzzles[name].word, name)
 
 		else
+			record_outcome(name, puzzle.word, false)
 			feedback(player, "Try the letters again!", "edu_english_blocks_incorrect", false)
 		end
 	end,

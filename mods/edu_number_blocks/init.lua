@@ -17,6 +17,16 @@ local function new_puzzle(player_name)
 	return logic.new_puzzle(math.random)
 end
 
+-- Generated equations have no content record, so they get their own bucket
+-- rather than being folded into a curated skill.
+local GENERATED_SKILL = "arithmetic_generated"
+
+-- Count the attempt against the equation's own skill as well as the total.
+local function record_outcome(player_name, puzzle, correct)
+	if not (edu_api and edu_api.record_result) then return end
+	edu_api.record_result(player_name, puzzle.skill or GENERATED_SKILL, correct)
+end
+
 -- Offer the child the blocks this equation calls for, plus the pack's deliberate
 -- wrong answers, instead of every number from 0 to 20.
 local function publish_task_blocks(player_name, puzzle)
@@ -165,6 +175,7 @@ local function check_answer(player)
 
 	-- Accept a single number block or adjacent digit blocks beside the answer.
 	if answer_matches(puzzle.pos, puzzle) then
+		record_outcome(name, puzzle, true)
 		minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.3})
 		visual_feedback(player, true)
 		flash_message(player, "★  CORRECT!  ★", 0x66ff66)
@@ -175,6 +186,7 @@ local function check_answer(player)
 		build_equation(puzzle.pos, next_puzzle, name)
 		minetest.chat_send_player(name, S("Wonderful! A new equation is ready."))
 	else
+		record_outcome(name, puzzle, false)
 		minetest.sound_play("edu_number_blocks_incorrect", {to_player = name, gain = 0.9})
 		visual_feedback(player, false)
 		flash_message(player, "✦  TRY AGAIN!  ✦", 0xffcc66)
@@ -221,9 +233,16 @@ for number = 0, 20 do
 		inventory_image = "edu_number_blocks_number_" .. number .. ".png",
 		tiles = {"edu_number_blocks_number_" .. number .. ".png"},
 		groups = {choppy = 2, oddly_breakable_by_hand = 2},
-		after_place_node = function(_pos, placer)
+		after_place_node = function(pos, placer)
 			local puzzle = placer and puzzles[placer:get_player_name()]
-			if puzzle and puzzle.pos then check_answer(placer) end
+			if not puzzle or not puzzle.pos then return end
+			-- Only check placements beside the board. Building with number blocks
+			-- somewhere else must not count as a failed attempt.
+			if math.abs(pos.x - puzzle.pos.x) > 9 or math.abs(pos.y - puzzle.pos.y) > 1
+				or math.abs(pos.z - puzzle.pos.z) > 1 then
+				return
+			end
+			check_answer(placer)
 		end,
 		on_construct = function(pos)
 			minetest.get_meta(pos):set_string("infotext", S("Number @1", number))
@@ -276,6 +295,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			return true
 		end
 		if answer_matches(pos, puzzle) then
+			record_outcome(name, puzzle, true)
 			minetest.sound_play("edu_number_blocks_correct", {to_player = name, gain = 1.0})
 			visual_feedback(player, true)
 			local next_puzzle = new_puzzle(name)
@@ -284,6 +304,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			build_equation(puzzle.pos, next_puzzle, name)
 			show_board(player, S("Wonderful! Build the next answer."))
 		else
+			record_outcome(name, puzzle, false)
 			minetest.sound_play("edu_number_blocks_incorrect", {to_player = name, gain = 0.8})
 			visual_feedback(player, false)
 			show_board(player, S("Not yet. Try a different number block."))

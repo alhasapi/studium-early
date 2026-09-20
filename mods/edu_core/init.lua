@@ -11,22 +11,55 @@ if not ok then
 	error("Invalid Studium content pack: " .. table.concat(errors, "; "))
 end
 
-function edu.get_progress(player_name)
-	local raw = edu.storage:get_string("progress_" .. player_name)
-	if raw == "" then
-		return {solved = 0, attempts = 0}
-	end
-
+-- Progress is stored as "solved:attempts". The overall counter keeps its
+-- original key so saves written before per-skill tracking still load; skill
+-- counters are written alongside it and are only created once a skill is used.
+local function read_counter(raw)
+	if type(raw) ~= "string" then return nil end
 	local solved, attempts = raw:match("^(%d+):(%d+)$")
-	return {
-		solved = tonumber(solved) or 0,
-		attempts = tonumber(attempts) or 0,
-	}
+	if not solved then return nil end
+	return {solved = tonumber(solved), attempts = tonumber(attempts)}
+end
+
+local function counter_string(value)
+	return string.format("%d:%d", value.solved, value.attempts)
+end
+
+-- A skill name comes from a content pack. Keep it usable as a storage key even
+-- if a pack uses punctuation.
+local function skill_key(skill)
+	return (tostring(skill):gsub("[^%w_%-]", "_"))
+end
+
+function edu.get_progress(player_name)
+	return read_counter(edu.storage:get_string("progress_" .. player_name)) or {solved = 0, attempts = 0}
 end
 
 function edu.save_progress(player_name, progress)
-	edu.storage:set_string("progress_" .. player_name,
-		string.format("%d:%d", progress.solved, progress.attempts))
+	edu.storage:set_string("progress_" .. player_name, counter_string(progress))
+end
+
+function edu.get_skill_progress(player_name, skill)
+	if not skill or skill == "" then return {solved = 0, attempts = 0} end
+	local raw = edu.storage:get_string("skill_" .. player_name .. "_" .. skill_key(skill))
+	return read_counter(raw) or {solved = 0, attempts = 0}
+end
+
+-- Record one task attempt. Activities call this instead of touching the counters
+-- so a solved task advances both the player's overall total and its own skill.
+function edu.record_result(player_name, skill, correct)
+	local overall = edu.get_progress(player_name)
+	overall.attempts = overall.attempts + 1
+	if correct then overall.solved = overall.solved + 1 end
+	edu.save_progress(player_name, overall)
+
+	if skill and skill ~= "" then
+		local record = edu.get_skill_progress(player_name, skill)
+		record.attempts = record.attempts + 1
+		if correct then record.solved = record.solved + 1 end
+		edu.storage:set_string("skill_" .. player_name .. "_" .. skill_key(skill), counter_string(record))
+	end
+	return overall
 end
 
 function edu.escape(text)

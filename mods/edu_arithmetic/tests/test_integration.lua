@@ -17,12 +17,18 @@ end
 _G.ItemStack = function(_) return {is_empty = function() return true end} end
 
 local progress = {solved = 0, attempts = 0}
+local skills = {}
 _G.edu = {
 	get_progress = function()
 		return {solved = progress.solved, attempts = progress.attempts}
 	end,
 	save_progress = function(_, value)
 		progress.solved, progress.attempts = value.solved, value.attempts
+	end,
+	record_result = function(_, skill, correct)
+		progress.attempts = progress.attempts + 1
+		if correct then progress.solved = progress.solved + 1 end
+		skills[skill] = (skills[skill] or 0) + 1
 	end,
 	escape = function(text) return tostring(text) end,
 }
@@ -97,5 +103,8 @@ assert(progress.attempts == 3, "a questionless submit is not counted")
 
 -- Unrelated formspecs are left to other mods.
 assert(definitions.receive_fields(player, "some_other_mod:form", {}) == false, "other formspecs ignored")
+
+-- Every attempt is counted against the kiosk's own skill, not just the total.
+assert(skills.kiosk_arithmetic == 3, "attempts recorded per skill, got " .. tostring(skills.kiosk_arithmetic))
 
 print("edu_arithmetic integration tests passed")

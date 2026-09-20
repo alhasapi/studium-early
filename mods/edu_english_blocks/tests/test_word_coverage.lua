@@ -17,10 +17,14 @@ local content = dofile(core .. "/content.lua")
 assert(content.register_pack(dofile(core .. "/content/early_en.lua")), "starter pack registers")
 
 -- Stand in for edu_core's task-block palette and record what the board publishes.
-local published
+local published, recorded
+recorded = {}
 _G.edu = {
 	content = content,
 	set_task_blocks = function(name, nodes) published = {name = name, nodes = nodes} end,
+	record_result = function(name, skill, correct)
+		recorded[#recorded + 1] = {name = name, skill = skill, correct = correct}
+	end,
 }
 
 local function meta(p)
@@ -49,6 +53,7 @@ _G.minetest = {
 	sound_play = function() end,
 	after = function() end,
 	add_particlespawner = function() end,
+	chat_send_player = function() end,
 	log = function(level, message) warnings[#warnings + 1] = level .. ": " .. message end,
 }
 
@@ -120,5 +125,17 @@ assert(#published.nodes == #expected,
 for index = 1, #expected do
 	assert(published.nodes[index] == expected[index], "published block " .. index .. " matches")
 end
+
+-- Solving the word must count against the word's own skill, not just a total.
+for index = 1, #word do
+	nodes[index .. ",1,0"] = "edu_english_blocks:letter_" .. word:sub(index, index)
+end
+board.on_rightclick(pos, {}, player)
+assert(#recorded == 1, "solving a word records one result, got " .. #recorded)
+assert(recorded[1].correct == true, "solved word recorded as correct")
+assert(recorded[1].name == "tester", "result recorded for the player")
+local expected_skill = source and source.skill or "english_builtin_spelling"
+assert(recorded[1].skill == expected_skill,
+	"recorded against " .. tostring(recorded[1].skill) .. ", expected " .. expected_skill)
 
 print("edu_english_blocks word coverage tests passed")

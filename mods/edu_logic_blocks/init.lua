@@ -52,6 +52,14 @@ local function answer_slot(pos)
 	return tonumber(minetest.get_meta(pos):get_string("slot")) or DEFAULT_SLOT
 end
 
+-- Built-in patterns have no content record, so they get their own bucket.
+local BUILTIN_SKILL = "logic_builtin_patterns"
+
+local function record_outcome(player_name, pattern, correct)
+	if not (edu_api and edu_api.record_result) then return end
+	edu_api.record_result(player_name, (pattern and pattern.skill) or BUILTIN_SKILL, correct)
+end
+
 -- Offer the colours this pattern calls for, plus the pack's deliberate
 -- confusions, instead of every colour.
 local function publish_task_blocks(player_name, pattern)
@@ -141,9 +149,11 @@ minetest.register_node("edu_logic_blocks:board", {
 		end
 		local target = minetest.get_meta(pos):get_string("answer")
 		if logic.is_correct({answer = target}, answer) then
+			record_outcome(name, board_patterns[board_key(pos)], true)
 			feedback(player, true)
 			build_pattern(pos, choose_pattern(), name)
 		else
+			record_outcome(name, board_patterns[board_key(pos)], false)
 			feedback(player, false)
 			-- A returning player may not have this pattern's blocks yet.
 			publish_task_blocks(name, board_patterns[board_key(pos)])

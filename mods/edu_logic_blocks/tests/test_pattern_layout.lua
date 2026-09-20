@@ -50,10 +50,14 @@ assert(content.register_pack({
 }), "pattern pack registers")
 
 -- Stand in for edu_core's task-block palette and record what the board publishes.
-local published
+local published, recorded
+recorded = {}
 _G.edu = {
 	content = content,
 	set_task_blocks = function(name, nodes) published = {name = name, nodes = nodes} end,
+	record_result = function(name, skill, correct)
+		recorded[#recorded + 1] = {name = name, skill = skill, correct = correct}
+	end,
 }
 
 dofile(root .. "/init.lua")
@@ -99,6 +103,12 @@ assert(metas["0,0,0"].values.slot == "5", "four-item slot recorded")
 nodes["5,1,0"] = "edu_logic_blocks:blue"
 definitions["edu_logic_blocks:blue"].after_place_node({x = 5, y = 1, z = 0}, player)
 assert(sounds[#sounds] == "edu_logic_blocks_correct", "answer at the four-item slot is accepted")
+
+-- Each attempt is counted against the pattern's own skill.
+assert(#recorded == 2, "two attempts recorded, got " .. #recorded)
+assert(recorded[1].correct == true and recorded[2].correct == true, "both solves recorded as correct")
+assert(recorded[2].skill == "repeating_patterns", "recorded against " .. tostring(recorded[2].skill))
+assert(recorded[2].name == "tester", "result recorded for the player")
 
 -- Back to the two-item pattern: the longer row must not leave stale blocks.
 assert(nodes["3,1,0"] == "edu_logic_blocks:question", "slot returns to the two-item position")

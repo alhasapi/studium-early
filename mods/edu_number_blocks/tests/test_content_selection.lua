@@ -36,10 +36,14 @@ local content = dofile(core .. "/content.lua")
 assert(content.register_pack(dofile(core .. "/content/early_en.lua")), "starter pack registers")
 
 -- Stand in for edu_core's task-block palette and record what the board publishes.
-local published
+local published, recorded
+recorded = {}
 _G.edu = {
 	content = content,
 	set_task_blocks = function(name, nodes) published = {name = name, nodes = nodes} end,
+	record_result = function(name, skill, correct)
+		recorded[#recorded + 1] = {name = name, skill = skill, correct = correct}
+	end,
 }
 
 local seed = 20260911
@@ -92,5 +96,24 @@ end
 local distinct = 0
 for _ in pairs(used) do distinct = distinct + 1 end
 assert(distinct == #items, "every pack equation is reachable, saw " .. distinct .. " of " .. #items)
+
+-- Solving an equation must count against that equation's own skill.
+board.after_place_node(pos, player)
+local solved_item = current_item()
+assert(solved_item, "an equation is on the board to solve")
+nodes["5,0,0"] = solved_item.accepted_nodes[1]
+board.on_rightclick(pos, {}, player)
+assert(#recorded == 1, "solving records one result, got " .. #recorded)
+assert(recorded[1].correct == true, "solved equation recorded as correct")
+assert(recorded[1].name == "tester", "result recorded for the player")
+assert(recorded[1].skill == solved_item.skill,
+	"recorded against " .. tostring(recorded[1].skill) .. ", expected " .. tostring(solved_item.skill))
+
+-- A wrong answer counts too, and must not score.
+local wrong = current_item()
+nodes["5,0,0"] = wrong.accepted_nodes[1] == "edu_number_blocks:number_0"
+	and "edu_number_blocks:number_1" or "edu_number_blocks:number_0"
+board.on_rightclick(pos, {}, player)
+assert(#recorded == 2 and recorded[2].correct == false, "wrong answer recorded as incorrect")
 
 print("edu_number_blocks content selection tests passed")
