@@ -9,5 +9,11 @@ else
   DEST="${XDG_DATA_HOME:-$HOME/.local/share}/luanti/mods"
 fi
 mkdir -p "$DEST"
-for mod in "$ROOT"/mods/edu_*; do cp -a "$mod" "$DEST/"; done
+for mod in "$ROOT"/mods/edu_*; do
+  # Replace the installed copy instead of merging into it. A plain copy leaves
+  # files that a later version renamed or dropped, and a stale file shadows the
+  # current one when Luanti loads the mod.
+  rm -rf "$DEST/$(basename "$mod")"
+  cp -a "$mod" "$DEST/"
+done
 printf 'Installed Studium mods in %s\n' "$DEST"
