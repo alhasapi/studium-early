@@ -27,9 +27,9 @@ for _, item in ipairs(pack.items) do
 	end
 end
 
--- Register only the author pack, so the board deterministically builds the new
--- word. The cue is written with a file extension and different case, which is
--- the mistake an author is most likely to make.
+-- Register a pack whose cue is written with a file extension and different case,
+-- which is the mistake an author is most likely to make. Content words are added
+-- ahead of the built-in list, so drawing index 1 selects the new word.
 assert(content.register_pack({
 	id = "author_pack", version = 1, locale = "en",
 	items = {
@@ -63,6 +63,9 @@ _G.minetest = {
 	add_particlespawner = function() end,
 	log = function(level, message) warnings[#warnings + 1] = level .. ": " .. message end,
 }
+
+-- Deterministic draw so the board builds the word added by the author pack.
+math.random = function() return 1 end
 
 dofile(root .. "/init.lua")
 

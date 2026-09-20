@@ -12,11 +12,27 @@ local function picture_key(cue)
 	return (key:gsub("[^a-z0-9_]", "_"))
 end
 
-if #spelling_items > 0 then logic.words = {} end
+-- The mod ships a picture and a texture for every built-in word. Content packs
+-- extend that vocabulary instead of replacing it: emptying the list here meant a
+-- pack holding three words silently retired the other twenty-three, along with
+-- their finished textures.
+local base_words = logic.words
+local words, seen_words = {}, {}
+local function add_word(word)
+	if type(word) ~= "string" or word == "" or seen_words[word] then return end
+	seen_words[word] = true
+	words[#words + 1] = word
+end
+
+-- Content words come first so a pack can override the picture cue for a word.
 for _, item in ipairs(spelling_items) do
-	logic.words[#logic.words + 1] = item.word
+	add_word(item.word)
 	pictures[item.word] = picture_key(item.picture)
 end
+for _, word in ipairs(base_words) do
+	add_word(word)
+end
+logic.words = words
 for _, word in ipairs(logic.words) do
 	pictures[word] = pictures[word] or picture_key(word)
 end
@@ -58,16 +74,8 @@ local directions = {
 
 local last_word
 local function choose_word()
-	if #logic.words == 0 then return "CAT" end
-	if #logic.words == 1 then return logic.words[1] end
-	-- Exclude the previous word from the draw. The old fallback used an index
-	-- expression that could never select the first word and, with two words,
-	-- always selected the second, so the same puzzle could repeat immediately.
-	local choices = {}
-	for _, word in ipairs(logic.words) do
-		if word ~= last_word then choices[#choices + 1] = word end
-	end
-	local word = choices[math.random(1, #choices)]
+	local word = logic.choose_word(logic.words, math.random, last_word)
+	if not word then return "CAT" end
 	last_word = word
 	return word
 end

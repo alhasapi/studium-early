@@ -13,4 +13,17 @@ function logic.is_correct(word, letters)
 	return true
 end
 
+-- Draw a word, avoiding the previous one whenever there is a choice. Kept here
+-- rather than in the mod so the selection rule is testable against any list.
+function logic.choose_word(words, random, last_word)
+	if type(words) ~= "table" or #words == 0 then return nil end
+	if #words == 1 then return words[1] end
+	local choices = {}
+	for _, word in ipairs(words) do
+		if word ~= last_word then choices[#choices + 1] = word end
+	end
+	if #choices == 0 then choices = words end
+	return choices[random(1, #choices)]
+end
+
 return logic
