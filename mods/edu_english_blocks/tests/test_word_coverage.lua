@@ -74,6 +74,12 @@ for _, word in ipairs(base) do
 end
 assert(#warnings == 0, "no missing textures expected: " .. table.concat(warnings, " "))
 
+-- The board places the picture, so digging one must not hand the child a block.
+for _, word in ipairs(base) do
+	local node = definitions["edu_english_blocks:picture_" .. word:lower()]
+	assert(node.drop == "", "picture " .. word:lower() .. " must not drop an item")
+end
+
 -- And the activity actually deals those words, not only the three in the pack.
 local content_words = {}
 for _, item in ipairs(content.find({domain = "english", type = "word_spelling"})) do

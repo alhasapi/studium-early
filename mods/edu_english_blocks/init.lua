@@ -296,6 +296,9 @@ for _, key in ipairs(sorted_picture_keys) do
 		description = S("Picture"),
 		tiles = {"edu_english_blocks_picture_" .. key .. ".png"},
 		groups = {not_in_creative_inventory = 1},
+		-- The board places these; a child who digs one should not end up holding
+		-- a decorative block with no use, like the pattern board's question block.
+		drop = "",
 	})
 end
 
