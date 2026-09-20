@@ -18,8 +18,16 @@ local function choose_pattern()
 	return pattern
 end
 
+local color_set = {}
+for _, color in ipairs(colors) do color_set[color] = true end
+
+-- Only the four pattern colours are blocks a child can answer with. Restricting
+-- this to known colours stops decorative board nodes, such as the question
+-- marker, from being mistaken for a placed answer.
 local function color_from_node(name)
-	return name:match("^edu_logic_blocks:(%a+)$")
+	local color = name:match("^edu_logic_blocks:(%a+)$")
+	if color and color_set[color] then return color end
+	return nil
 end
 
 local function clear_slots(pos)
@@ -68,14 +76,26 @@ minetest.register_node("edu_logic_blocks:board", {
 	end,
 	on_rightclick = function(pos, _node, player)
 		local name = player:get_player_name()
-		local answer
-		-- Accept blocks placed at the target slot even when the child misses
-		-- the center by one node or places it at board height.
+		-- Accept blocks placed at the target slot even when the child misses the
+		-- center by one node. Skip the pattern's own row: those blocks are part
+		-- of the puzzle rather than an answer, and the final pattern block sits
+		-- directly beside the slot. Of what remains, the block nearest the slot
+		-- is the one the child meant.
+		local slot = {x = pos.x + 4, y = pos.y + 1, z = pos.z}
+		local answer, best_distance
 		for x = -1, 1 do
 			for y = -1, 1 do
 				for z = -1, 1 do
-					local candidate = color_from_node(minetest.get_node({x = pos.x + 4 + x, y = pos.y + 1 + y, z = pos.z + z}).name)
-					if candidate then answer = candidate end
+					local on_pattern_row = y == 0 and z == 0 and x ~= 0
+					if not on_pattern_row then
+						local candidate = color_from_node(minetest.get_node({x = slot.x + x, y = slot.y + y, z = slot.z + z}).name)
+						if candidate then
+							local distance = x * x + y * y + z * z
+							if best_distance == nil or distance < best_distance then
+								answer, best_distance = candidate, distance
+							end
+						end
+					end
 				end
 			end
 		end

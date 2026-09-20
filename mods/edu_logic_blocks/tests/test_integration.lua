@@ -47,4 +47,29 @@ assert(sounds[#sounds] == "edu_logic_blocks_correct", "automatic correct answer 
 nodes["4,1,0"] = "edu_logic_blocks:red"
 board.on_rightclick(pos, {}, player)
 assert(sounds[#sounds] == "edu_logic_blocks_incorrect", "incorrect answer feedback")
+
+-- Regression: a correct block placed one node below the slot leaves the question
+-- marker inside the tolerance box. The marker used to be read as the answer, so
+-- a correctly placed block was reported as wrong.
+nodes["4,1,0"] = "edu_logic_blocks:question"
+nodes["4,0,0"] = "edu_logic_blocks:blue"
+board.on_rightclick(pos, {}, player)
+assert(sounds[#sounds] == "edu_logic_blocks_correct", "correct block below the slot is accepted")
+
+nodes["4,0,0"] = "air"
+nodes["4,2,0"] = "edu_logic_blocks:blue"
+board.on_rightclick(pos, {}, player)
+assert(sounds[#sounds] == "edu_logic_blocks_correct", "correct block above the slot is accepted")
+
+-- The question marker on its own must never count as an answer.
+nodes["4,2,0"] = "air"
+nodes["4,1,0"] = "edu_logic_blocks:question"
+board.on_rightclick(pos, {}, player)
+assert(sounds[#sounds] == "edu_logic_blocks_incorrect", "question marker is not an answer")
+
+nodes["4,1,0"] = "edu_logic_blocks:blue"
+nodes["3,1,0"] = "edu_logic_blocks:red"
+board.on_rightclick(pos, {}, player)
+assert(sounds[#sounds] == "edu_logic_blocks_correct", "block in the slot wins over a stray block")
+
 print("edu_logic_blocks integration tests passed")
