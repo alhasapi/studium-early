@@ -51,4 +51,26 @@ for index, letter in ipairs({"C", "A", "T"}) do
 end
 definitions["edu_english_blocks:letter_T"].after_place_node({x = pos.x + 3, y = pos.y + 1, z = pos.z}, player)
 assert(sounds[#sounds] == "edu_english_blocks_correct", "automatic correct word feedback")
+
+-- Regression: the previous attempt used to survive into the next word, because
+-- the clearing loop walked six rays from the board instead of the windows the
+-- board actually reads letters from.
+for index = 1, 3 do
+	assert(nodes[key({x = pos.x + index, y = pos.y + 1, z = pos.z})] == "air",
+		"previous word's letter " .. index .. " cleared for the new word")
+end
+-- Digging the board must not strand the letters and picture it placed.
+assert(board.on_destruct, "board cleans up when dug")
+for index = 1, 3 do
+	nodes[key({x = pos.x + index, y = pos.y + 1, z = pos.z})] = "edu_english_blocks:letter_X"
+end
+assert(nodes[key({x = pos.x - 1, y = pos.y + 1, z = pos.z + 1})]:match("^edu_english_blocks:picture_"),
+	"board placed a picture to clean up")
+board.on_destruct(pos)
+for index = 1, 3 do
+	assert(nodes[key({x = pos.x + index, y = pos.y + 1, z = pos.z})] == "air",
+		"letter " .. index .. " removed with the board")
+end
+assert(nodes[key({x = pos.x - 1, y = pos.y + 1, z = pos.z + 1})] == "air", "picture removed with the board")
+
 print("edu_english_blocks integration tests passed")

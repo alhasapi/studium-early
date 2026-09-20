@@ -97,6 +97,53 @@ local function letter_from_node(name)
 	return name:match("^edu_english_blocks:letter_([A-Z])$")
 end
 
+-- The board accepts a letter anywhere in a small window around its slot, because
+-- children place blocks by hand. Reading a word, clearing the previous attempt,
+-- and the automatic check all walk these same positions, so they cannot disagree
+-- about what is standing on the board.
+local function for_each_slot_position(pos, direction, length, callback)
+	for index = 1, length do
+		for a = -4, 4 do
+			for b = -4, 4 do
+				local p
+				if direction.x ~= 0 then
+					p = {x = pos.x + direction.x * index, y = pos.y + 1 + a, z = pos.z + b}
+				elseif direction.z ~= 0 then
+					p = {x = pos.x + a, y = pos.y + 1 + b, z = pos.z + direction.z * index}
+				else
+					p = {x = pos.x + a, y = pos.y + direction.y * index, z = pos.z + b}
+				end
+				callback(p, index)
+			end
+		end
+	end
+end
+
+local function read_word(pos, direction, length)
+	local letters = {}
+	for index = 1, length do letters[index] = "" end
+	for_each_slot_position(pos, direction, length, function(p, index)
+		local letter = letter_from_node(minetest.get_node(p).name)
+		if letter then letters[index] = letter end
+	end)
+	return letters
+end
+
+-- True once every slot of one reading has a letter, whatever that letter is.
+-- on_rightclick then decides whether the word is actually right.
+local function direction_filled(pos, direction, length)
+	local found = {}
+	for_each_slot_position(pos, direction, length, function(p, index)
+		if not found[index] and letter_from_node(minetest.get_node(p).name) then
+			found[index] = true
+		end
+	end)
+	for index = 1, length do
+		if not found[index] then return false end
+	end
+	return true
+end
+
 -- Offer the letters this word needs, plus any the pack marks as deliberate
 -- confusions, instead of the whole alphabet.
 local function publish_task_blocks(player_name, word)
@@ -105,23 +152,47 @@ local function publish_task_blocks(player_name, word)
 	edu_api.set_task_blocks(player_name, item and content and content.task_blocks(item) or {})
 end
 
+-- The board owns the letters and the picture placed around it. Clearing them is
+-- shared by building a new word and digging the board, so a removed board does
+-- not leave a word's worth of blocks stranded in the world.
+local DEFAULT_CLEAR_LENGTH = 12
+
+local function picture_pos(pos)
+	return {x = pos.x - 1, y = pos.y + 1, z = pos.z + 1}
+end
+
+local function clear_letters(pos, length)
+	for _, direction in ipairs(directions) do
+		for_each_slot_position(pos, direction, length, function(p)
+			if letter_from_node(minetest.get_node(p).name) then
+				minetest.remove_node(p)
+			end
+		end)
+	end
+end
+
+local function clear_board(pos)
+	-- The word is still in the metadata while on_destruct runs. Fall back to a
+	-- generous length if it is somehow missing, so nothing is left behind.
+	local length = #minetest.get_meta(pos):get_string("word")
+	if length == 0 then length = DEFAULT_CLEAR_LENGTH end
+	clear_letters(pos, length)
+	local picture = picture_pos(pos)
+	if minetest.get_node(picture).name:match("^edu_english_blocks:picture_") then
+		minetest.remove_node(picture)
+	end
+end
+
 local function build_word(pos, word, player_name)
 	publish_task_blocks(player_name, word)
 	-- Clear the previous attempt and leave blank slots for the child.
-	for _, direction in ipairs(directions) do
-		for distance = 1, 8 do
-			local p = {x = pos.x + direction.x * distance, y = pos.y + direction.y * distance, z = pos.z + direction.z * distance}
-			if minetest.get_node(p).name:match("^edu_english_blocks:letter_[A-Z]$") then
-				minetest.remove_node(p)
-			end
-		end
-	end
+	clear_letters(pos, #word)
 	local picture = pictures[word] or picture_key(word)
 	-- Record the word before placing the picture, so a failure here cannot leave
 	-- the board permanently answerless.
 	minetest.get_meta(pos):set_string("word", word)
 	minetest.get_meta(pos):set_string("infotext", S("Look at the picture and build the word"))
-	minetest.set_node({x = pos.x - 1, y = pos.y + 1, z = pos.z + 1}, {
+	minetest.set_node(picture_pos(pos), {
 		name = "edu_english_blocks:picture_" .. picture,
 	})
 end
@@ -167,6 +238,9 @@ minetest.register_node("edu_english_blocks:board", {
 		minetest.get_meta(pos):set_string("word", word)
 		build_word(pos, word)
 	end,
+	on_destruct = function(pos)
+		clear_board(pos)
+	end,
 	on_rightclick = function(pos, _node, player)
 		local name = player:get_player_name()
 		local puzzle = puzzles[name]
@@ -181,32 +255,9 @@ minetest.register_node("edu_english_blocks:board", {
 		end
 		-- Covers a board whose word was chosen before this player arrived.
 		publish_task_blocks(name, puzzle.word)
-		local function read_letters(direction)
-			local letters = {}
-			for index = 1, #puzzle.word do
-				-- Accept small placement offsets around each slot. This is deliberately
-				-- forgiving for children placing blocks by hand.
-				for a = -4, 4 do
-					for b = -4, 4 do
-						local p
-						if direction.x ~= 0 then
-							p = {x = pos.x + direction.x * index, y = pos.y + 1 + a, z = pos.z + b}
-						elseif direction.z ~= 0 then
-							p = {x = pos.x + a, y = pos.y + 1 + b, z = pos.z + direction.z * index}
-						else
-							p = {x = pos.x + a, y = pos.y + direction.y * index, z = pos.z + b}
-						end
-						local letter = letter_from_node(minetest.get_node(p).name)
-						if letter then letters[index] = letter end
-					end
-				end
-				letters[index] = letters[index] or ""
-			end
-			return letters
-		end
 		local correct = false
 		for _, direction in ipairs(directions) do
-			if logic.is_correct(puzzle.word, read_letters(direction)) then
+			if logic.is_correct(puzzle.word, read_word(pos, direction, #puzzle.word)) then
 				correct = true
 				break
 			end
@@ -267,66 +318,22 @@ local command = {
 minetest.register_chatcommand("edu_english", command)
 minetest.register_chatcommand("edu_english_blocks", command)
 
--- Once all letter slots are filled, placing the final block checks the word
--- automatically. The board remains usable for starting a puzzle and retrying.
-local function word_matches_nearby(board_pos, word)
-	for ox = -4, 4 do
-		for oy = -2, 2 do
-			for oz = -4, 4 do
-				for _, direction in ipairs(directions) do
-					local matches = true
-					for index = 1, #word do
-						local p = {
-							x = board_pos.x + ox + direction.x * (index - 1),
-							y = board_pos.y + oy + direction.y * (index - 1),
-							z = board_pos.z + oz + direction.z * (index - 1),
-						}
-						if letter_from_node(minetest.get_node(p).name) ~= word:sub(index, index) then
-							matches = false
-							break
-						end
-					end
-					if matches then return true end
-				end
-			end
-		end
-	end
-	return false
-end
-
+-- Once every letter slot of some reading is filled, placing the final block
+-- checks the word automatically. The board remains usable for starting a puzzle
+-- and retrying. The check walks the same tolerance windows as on_rightclick.
 auto_check_word = function(pos, placer)
 	if not placer or not placer.get_player_name or not letter_from_node(minetest.get_node(pos).name) then return end
 	local puzzle = puzzles[placer:get_player_name()]
 	if not puzzle or not puzzle.pos then return end
 	local board_pos = puzzle.pos
-	if math.abs(pos.x - board_pos.x) > 8 or math.abs(pos.y - board_pos.y) > 2 or math.abs(pos.z - board_pos.z) > 8 then return end
-	if word_matches_nearby(board_pos, puzzle.word) then
-		local board = minetest.get_node(board_pos)
-		if board.name == "edu_english_blocks:board" then
-			minetest.registered_nodes[board.name].on_rightclick(board_pos, board, placer)
-		end
+	local length = #puzzle.word
+	local reach = 4 + length
+	if math.abs(pos.x - board_pos.x) > reach or math.abs(pos.y - board_pos.y) > reach
+		or math.abs(pos.z - board_pos.z) > reach then
 		return
 	end
 	for _, direction in ipairs(directions) do
-		local complete = true
-		for index = 1, #puzzle.word do
-			local found = false
-			for a = -4, 4 do
-				for b = -4, 4 do
-					local p
-					if direction.x ~= 0 then
-						p = {x = board_pos.x + direction.x * index, y = board_pos.y + 1 + a, z = board_pos.z + b}
-					elseif direction.z ~= 0 then
-						p = {x = board_pos.x + a, y = board_pos.y + 1 + b, z = board_pos.z + direction.z * index}
-					else
-						p = {x = board_pos.x + a, y = board_pos.y + direction.y * index, z = board_pos.z + b}
-					end
-					if letter_from_node(minetest.get_node(p).name) then found = true end
-				end
-			end
-			if not found then complete = false break end
-		end
-		if complete then
+		if direction_filled(board_pos, direction, length) then
 			local board = minetest.get_node(board_pos)
 			if board.name == "edu_english_blocks:board" then
 				minetest.registered_nodes[board.name].on_rightclick(board_pos, board, placer)

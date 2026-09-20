@@ -24,20 +24,40 @@ local function publish_task_blocks(player_name, puzzle)
 	edu_api.set_task_blocks(player_name, content and content.task_blocks(puzzle) or {})
 end
 
-local function build_equation(pos, puzzle, player_name)
-	publish_task_blocks(player_name, puzzle)
-	-- Remove an old answer block, including one placed slightly off-center.
+-- The board owns the equation row and whatever the child built beside it.
+-- Clearing is shared by building a new equation and digging the board, so a
+-- removed board does not leave blocks stranded in the world.
+local EQUATION_NODES = {
+	["edu_number_blocks:plus"] = true,
+	["edu_number_blocks:minus"] = true,
+	["edu_number_blocks:equals"] = true,
+}
+
+local function is_board_node(name)
+	return EQUATION_NODES[name] or name:match("^edu_number_blocks:number_%d+$") ~= nil
+end
+
+local function clear_equation(pos)
+	-- The answer can sit anywhere in the wide, forgiving area beside the board.
 	for _, x in ipairs({-2, -1, 0, 5, 6, 7, 8}) do
 		for y = -1, 1 do
 			for z = -1, 1 do
 				local answer_pos = {x = pos.x + x, y = pos.y + y, z = pos.z + z}
-				local old_name = minetest.get_node(answer_pos).name
-				if old_name:match("^edu_number_blocks:number_%d+$") then
+				if minetest.get_node(answer_pos).name:match("^edu_number_blocks:number_%d+$") then
 					minetest.remove_node(answer_pos)
 				end
 			end
 		end
 	end
+	for index = 1, 4 do
+		local p = {x = pos.x + index, y = pos.y, z = pos.z}
+		if is_board_node(minetest.get_node(p).name) then minetest.remove_node(p) end
+	end
+end
+
+local function build_equation(pos, puzzle, player_name)
+	publish_task_blocks(player_name, puzzle)
+	clear_equation(pos)
 	local nodes = {
 		{x = pos.x + 1, name = "edu_number_blocks:number_" .. puzzle.left},
 		{x = pos.x + 2, name = puzzle.op == "+" and "edu_number_blocks:plus" or "edu_number_blocks:minus"},
@@ -174,6 +194,9 @@ minetest.register_node("edu_number_blocks:board", {
 			puzzles[placer:get_player_name()] = puzzle
 			build_equation(pos, puzzle, placer:get_player_name())
 		end
+	end,
+	on_destruct = function(pos)
+		clear_equation(pos)
 	end,
 	on_rightclick = function(pos, _node, clicker)
 		local name = clicker:get_player_name()

@@ -72,4 +72,11 @@ nodes["3,1,0"] = "edu_logic_blocks:red"
 board.on_rightclick(pos, {}, player)
 assert(sounds[#sounds] == "edu_logic_blocks_correct", "block in the slot wins over a stray block")
 
+-- Digging the board must not strand the pattern row.
+assert(board.on_destruct, "board cleans up when dug")
+board.on_destruct(pos)
+for index = 1, 4 do
+	assert(nodes[index .. ",1,0"] == "air", "pattern slot " .. index .. " removed with the board")
+end
+
 print("edu_logic_blocks integration tests passed")

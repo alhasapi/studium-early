@@ -57,4 +57,13 @@ assert(sounds[#sounds] == "edu_number_blocks_correct", "automatic two-digit arit
 nodes["5,0,0"] = "edu_number_blocks:number_0"
 board.on_rightclick(pos, {}, player)
 assert(sounds[#sounds] == "edu_number_blocks_incorrect", "incorrect arithmetic feedback")
+-- Digging the board must not strand the equation or the answer beside it.
+assert(board.on_destruct, "board cleans up when dug")
+board.on_destruct(pos)
+for index = 1, 4 do
+	assert(nodes[index .. ",0,0"] == "air", "equation node " .. index .. " removed with the board")
+end
+assert(nodes["5,0,0"] == "air", "answer block removed with the board")
+assert(nodes["6,0,0"] == "air", "second answer block removed with the board")
+
 print("edu_number_blocks integration tests passed")

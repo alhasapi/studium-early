@@ -110,6 +110,10 @@ minetest.register_node("edu_logic_blocks:board", {
 	on_construct = function(pos)
 		build_pattern(pos, choose_pattern())
 	end,
+	on_destruct = function(pos)
+		clear_slots(pos)
+		board_patterns[board_key(pos)] = nil
+	end,
 	on_rightclick = function(pos, _node, player)
 		local name = player:get_player_name()
 		-- Accept blocks placed at the target slot even when the child misses the
