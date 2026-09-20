@@ -1,26 +1,9 @@
 local S = minetest.get_translator("edu_arithmetic")
+local logic = dofile(minetest.get_modpath("edu_arithmetic") .. "/logic.lua")
 local quiz = {}
 
 local function make_question()
-	local left = math.random(0, 10)
-	local right = math.random(0, 10)
-	local addition = math.random(1, 2) == 1
-
-	if addition then
-		return {
-			text = string.format("%d + %d = ?", left, right),
-			answer = left + right,
-		}
-	end
-
-	-- Keep subtraction answers non-negative for early learners.
-	if right > left then
-		left, right = right, left
-	end
-	return {
-		text = string.format("%d - %d = ?", left, right),
-		answer = left - right,
-	}
+	return logic.make_question(math.random)
 end
 
 local function show_quiz(player, message)
