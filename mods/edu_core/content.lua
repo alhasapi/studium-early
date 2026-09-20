@@ -147,16 +147,22 @@ function content.find(filter)
 	return result
 end
 
-function content.choose(filter, random, last_id)
-	local items = content.find(filter)
-	if #items == 0 then return nil end
+-- Choose one record, avoiding the one used last whenever there is a choice.
+-- Every activity selects its next task through this, so the no-repeat rule is
+-- implemented and tested once instead of once per module.
+function content.pick(items, random, last_id)
+	if type(items) ~= "table" or #items == 0 then return nil end
 	if #items == 1 then return items[1] end
 	local eligible = {}
 	for _, item in ipairs(items) do
 		if item.id ~= last_id then eligible[#eligible + 1] = item end
 	end
-	items = #eligible > 0 and eligible or items
-	return items[random(1, #items)]
+	if #eligible == 0 then eligible = items end
+	return eligible[random(1, #eligible)]
+end
+
+function content.choose(filter, random, last_id)
+	return content.pick(content.find(filter), random, last_id)
 end
 
 return content

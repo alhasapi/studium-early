@@ -1,19 +1,17 @@
 local S = minetest.get_translator("edu_logic_blocks")
 local logic = dofile(minetest.get_modpath("edu_logic_blocks") .. "/logic.lua")
-local content_patterns = rawget(_G, "edu") and edu.content and edu.content.find({domain = "logic", type = "visual_pattern"}) or {}
-if #content_patterns > 0 then logic.patterns = content_patterns end
+local content = rawget(_G, "edu") and edu.content or nil
+local content_patterns = content and content.find({domain = "logic", type = "visual_pattern"}) or {}
+-- A pack supplies its own curated patterns; otherwise the built-in set is used.
+local pattern_items = #content_patterns > 0 and content_patterns or logic.patterns
 local puzzles = {}
 local colors = {"red", "blue", "yellow", "green"}
 local last_pattern_id
 
 local function choose_pattern()
-	if #logic.patterns == 0 then return {sequence = {"red", "blue", "red"}, answer = "blue"} end
-	if #logic.patterns == 1 then return logic.patterns[1] end
-	local choices = {}
-	for _, pattern in ipairs(logic.patterns) do
-		if not pattern.id or pattern.id ~= last_pattern_id then choices[#choices + 1] = pattern end
-	end
-	local pattern = choices[math.random(1, #choices)]
+	local pattern = content and content.pick(pattern_items, math.random, last_pattern_id)
+	if not pattern and #pattern_items > 0 then pattern = pattern_items[math.random(1, #pattern_items)] end
+	if not pattern then return {sequence = {"red", "blue", "red"}, answer = "blue"} end
 	last_pattern_id = pattern.id
 	return pattern
 end

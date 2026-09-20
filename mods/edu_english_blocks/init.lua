@@ -1,6 +1,7 @@
 local S = minetest.get_translator("edu_english_blocks")
 local logic = dofile(minetest.get_modpath("edu_english_blocks") .. "/logic.lua")
-local spelling_items = rawget(_G, "edu") and edu.content and edu.content.find({domain = "english", type = "word_spelling"}) or {}
+local content = rawget(_G, "edu") and edu.content or nil
+local spelling_items = content and content.find({domain = "english", type = "word_spelling"}) or {}
 local puzzles = {}
 local pictures = {}
 
@@ -15,24 +16,30 @@ end
 -- The mod ships a picture and a texture for every built-in word. Content packs
 -- extend that vocabulary instead of replacing it: emptying the list here meant a
 -- pack holding three words silently retired the other twenty-three, along with
--- their finished textures.
+-- their finished textures. Built-in words get synthetic ids so the shared
+-- selector can avoid repeating them too.
 local base_words = logic.words
-local words, seen_words = {}, {}
-local function add_word(word)
+local word_items, seen_words = {}, {}
+local function add_word(item)
+	local word = item.word
 	if type(word) ~= "string" or word == "" or seen_words[word] then return end
 	seen_words[word] = true
-	words[#words + 1] = word
+	word_items[#word_items + 1] = item
 end
 
 -- Content words come first so a pack can override the picture cue for a word.
 for _, item in ipairs(spelling_items) do
-	add_word(item.word)
-	pictures[item.word] = picture_key(item.picture)
+	add_word({id = item.id, word = item.word, picture = item.picture})
 end
 for _, word in ipairs(base_words) do
-	add_word(word)
+	add_word({id = "english:builtin-" .. word:lower(), word = word})
 end
-logic.words = words
+
+logic.words = {}
+for _, item in ipairs(word_items) do
+	logic.words[#logic.words + 1] = item.word
+	if item.picture then pictures[item.word] = picture_key(item.picture) end
+end
 for _, word in ipairs(logic.words) do
 	pictures[word] = pictures[word] or picture_key(word)
 end
@@ -72,12 +79,13 @@ local directions = {
 	{x = 0, y = 1, z = 0}, {x = 0, y = -1, z = 0},
 }
 
-local last_word
+local last_word_id
 local function choose_word()
-	local word = logic.choose_word(logic.words, math.random, last_word)
-	if not word then return "CAT" end
-	last_word = word
-	return word
+	local item = content and content.pick(word_items, math.random, last_word_id)
+	if not item and #word_items > 0 then item = word_items[math.random(1, #word_items)] end
+	if not item then return "CAT" end
+	last_word_id = item.id
+	return item.word
 end
 
 local function letter_from_node(name)

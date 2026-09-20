@@ -24,14 +24,13 @@ check(subtraction.left == 10 and subtraction.right == 3, "subtraction operands")
 check(subtraction.op == "-" and subtraction.answer == 7, "subtraction answer")
 check(subtraction.left >= subtraction.right, "subtraction is non-negative")
 
-local records = {
-	{id = "math:test-add", left = 4, op = "+", right = 5, answer = 9, skill = "addition", band = 1},
-	{id = "math:test-sub", left = 7, op = "-", right = 3, answer = 4, skill = "subtraction", band = 1},
-}
-local from_content = logic.new_puzzle(function() return 1 end, records)
-check(from_content.id == "math:test-add" and from_content.answer == 9, "content arithmetic record selected")
-local no_repeat = logic.new_puzzle(function() return 1 end, records, "math:test-add")
-check(no_repeat.id == "math:test-sub", "content selection avoids immediate repeat")
+-- Content selection itself is content.pick in edu_core; see the edu_core
+-- content tests. This only checks the record conversion.
+local record = {id = "math:test-add", left = 4, op = "+", right = 5, answer = 9, skill = "addition", band = 1}
+local from_content = logic.puzzle_from_item(record)
+check(from_content.id == "math:test-add" and from_content.answer == 9, "content record becomes a puzzle")
+check(from_content.left == 4 and from_content.op == "+" and from_content.right == 5, "record keeps its equation")
+check(from_content.skill == "addition" and from_content.band == 1, "record keeps its skill metadata")
 
 check(logic.is_correct(addition, 17), "two-digit correct answer")
 check(not logic.is_correct(addition, 16), "wrong answer rejected")

@@ -75,4 +75,43 @@ local first = content.choose({domain = "logic"}, function() return 1 end)
 local second = content.choose({domain = "logic"}, function() return 1 end, first.id)
 check(first.id ~= second.id, "selector avoids immediate repeats when possible")
 
+-- content.pick is the selector every activity uses. With exactly two records the
+-- old English fallback could only ever reach the second one, so a draw matching
+-- the previous record repeated it.
+local pair = {{id = "a"}, {id = "b"}}
+local draws = {2, 2, 1}
+local index = 0
+local function scripted(low, high)
+	index = index + 1
+	local value = draws[index] or low
+	if value > high then value = high end
+	if value < low then value = low end
+	return value
+end
+local picked = content.pick(pair, scripted, nil)
+check(picked.id == "b", "first draw takes the drawn record")
+check(content.pick(pair, scripted, picked.id).id == "a", "two-record draw never repeats")
+
+check(content.pick({}, math.random, nil) == nil, "empty list has no record")
+check(content.pick({{id = "only"}}, math.random, "only").id == "only", "single record is chosen as is")
+
+-- A record without an id cannot be excluded, so the list is used unchanged
+-- rather than returning nothing.
+local anonymous = {{}, {}}
+check(content.pick(anonymous, function() return 1 end, nil) ~= nil, "records without ids still selected")
+
+local seed = 20260911
+local function minstd(low, high)
+	seed = (seed * 48271) % 2147483647
+	if high <= low then return low end
+	return low + (seed % (high - low + 1))
+end
+local five = {{id = "a"}, {id = "b"}, {id = "c"}, {id = "d"}, {id = "e"}}
+local previous
+for _ = 1, 500 do
+	local item = content.pick(five, minstd, previous)
+	check(item.id ~= previous, "no immediate repeat across a five-record list")
+	previous = item.id
+end
+
 print("edu_core content tests passed: " .. passed)

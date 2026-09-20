@@ -1,13 +1,19 @@
 local S = minetest.get_translator("edu_number_blocks")
 local puzzles = {}
 local logic = dofile(minetest.get_modpath("edu_number_blocks") .. "/logic.lua")
-local arithmetic_items = rawget(_G, "edu") and edu.content and edu.content.find({domain = "math", type = "arithmetic_equation"}) or {}
+local content = rawget(_G, "edu") and edu.content or nil
+local arithmetic_items = content and content.find({domain = "math", type = "arithmetic_equation"}) or {}
 local last_item_by_player = {}
 
 local function new_puzzle(player_name)
-	local puzzle = logic.new_puzzle(math.random, arithmetic_items, last_item_by_player[player_name])
-	last_item_by_player[player_name] = puzzle.id
-	return puzzle
+	local item = content and content.pick(arithmetic_items, math.random, last_item_by_player[player_name])
+	if item then
+		last_item_by_player[player_name] = item.id
+		return logic.puzzle_from_item(item)
+	end
+	-- No content pack for this domain: fall back to generated equations.
+	last_item_by_player[player_name] = nil
+	return logic.new_puzzle(math.random)
 end
 
 local function build_equation(pos, puzzle)
