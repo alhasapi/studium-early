@@ -38,14 +38,26 @@ jobs:
       - name: Install Luanti
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends minetest minetest-game \
-            || sudo apt-get install -y --no-install-recommends luanti || true
-          # Fail here, with a clear message, rather than letting the smoke test
-          # skip and report a green run that tested nothing.
-          command -v luanti || command -v minetest || {
-            echo "No Luanti server package is available on this runner." >&2
+          # Ubuntu ships the engine but, as of noble, no game package, so try the
+          # engine names that exist and fail loudly if none of them installed.
+          sudo apt-get install -y --no-install-recommends minetest \
+            || sudo apt-get install -y --no-install-recommends minetest-server \
+            || true
+          export PATH="$PATH:/usr/games"
+          if ! command -v luanti && ! command -v minetest && ! command -v minetestserver; then
+            echo "::error::No Luanti engine package is available on this runner."
+            apt-cache policy minetest minetest-server luanti || true
             exit 1
-          }
+          fi
+
+      - name: Install Minetest Game
+        run: |
+          # The smoke test loads a game, which no distribution package supplies
+          # here. Fetch it the same way a player would.
+          mkdir -p "$HOME/.minetest/games"
+          git clone --depth 1 https://github.com/luanti-org/minetest_game \
+            "$HOME/.minetest/games/minetest_game"
+          ls "$HOME/.minetest/games"
 
       - name: Run live smoke test
         env:

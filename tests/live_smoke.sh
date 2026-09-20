@@ -1,8 +1,14 @@
 #!/bin/sh
 set -eu
 
+# Debian and Ubuntu install the engine under /usr/games, which is not always on
+# PATH for non-interactive shells. 'luanti' is the current name; 'minetest' and
+# 'minetestserver' are the older ones still shipped by distributions.
+PATH="$PATH:/usr/games"
+export PATH
+
 BIN=""
-for candidate in luanti minetest; do
+for candidate in luanti minetest minetestserver; do
   if command -v "$candidate" >/dev/null 2>&1; then
     BIN="$candidate"
     break
